@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>OurDX Chatbot</title>
+  <link rel="stylesheet" href="/frontend/styles.css?v=20260108">
+</head>
+<body>
+  <div id="app">
+    <!-- Landing: logo + simple login + options -->
+    <section id="ask-landing" class="ask-hero">
+      <div class="ask-container">
+        <div class="ask-headline-wrap">
+          <div class="login-logo" aria-hidden="true">
+            <svg class="logo-heart" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 22l7.8-8.6 1-1a5.5 5.5 0 0 0 0-7.8z"/>
+            </svg>
+          </div>
+          <h2 class="ask-headline">Welcome to HealthCoach</h2>
+          <div class="ask-started" style="margin-top: -8px;">Please confirm the patient's name and date of birth.</div>
+        </div>
+        <div class="login-form">
+          <div class="login-row">
+            <input id="landing-name" class="login-input" type="text" placeholder="Patient name" autocomplete="name" required />
+          </div>
+          <div class="login-row">
+            <input id="landing-dob" class="login-input" type="date" autocomplete="bday" required />
+          </div>
+          <div class="login-actions">
+            <button id="landing-continue" class="login-btn" disabled>Continue</button>
+          </div>
+        </div>
+        <div id="landing-options" style="display: none;">
+          <div class="ask-started" style="margin-top: 16px;">Choose a section</div>
+          <div class="ask-grid">
+          <button id="ask-card-review" class="ask-card" type="button" aria-label="Review last visit">
+            <div class="ask-card-icon" aria-hidden="true">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="5" y="3" width="14" height="18" rx="3"></rect>
+                <path d="M9 7h6M8 11h8M8 15h6"></path>
+              </svg>
+            </div>
+            <div class="ask-card-title">Review last visit</div>
+            <div class="ask-card-sub">See notes and follow-ups from your last appointment.</div>
+          </button>
+          <button id="ask-card-survey" class="ask-card" type="button" aria-label="OurDX survey">
+            <div class="ask-card-icon" aria-hidden="true">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 4h16v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4z"></path>
+                <path d="M8 8h8M8 12h8M8 16h5"></path>
+              </svg>
+            </div>
+            <div class="ask-card-title">OurDX survey</div>
+            <div class="ask-card-sub">Prepare for your next visit with a short guided survey.</div>
+          </button>
+          </div>
+        </div>
+      </div>
+    </section>
+    <div class="topbar">
+      <button id="nav-back" class="icon-btn" aria-label="Back" title="Back">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>
+      </button>
+      <div class="brand" aria-label="HealthCoach">
+        <svg class="logo-heart" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 22l7.8-8.6 1-1a5.5 5.5 0 0 0 0-7.8z"/>
+        </svg>
+        <span class="brand-text">HealthCoach</span>
+      </div>
+      <div class="spacer"></div>
+      <button id="nav-history" class="icon-btn" aria-label="History" title="History">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="9"></circle>
+          <path d="M12 7v5l3 3"></path>
+        </svg>
+      </button>
+      <button id="nav-profile" class="icon-btn" aria-label="Profile" title="Profile">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10Z"/>
+          <path d="M20 21a8 8 0 1 0-16 0"/>
+        </svg>
+      </button>
+    </div>
+    <div id="demographics-form" class="grouped-form">
+      <div class="page-header">
+        <h1 class="page-title">Let's begin</h1>
+        <p class="page-subtitle">Please enter the patient's name and date of birth.</p>
+      </div>
+
+      <section class="group" style="display:none;">
+        <div class="group-title">About</div>
+        <div class="row">
+          <div class="row-label">Answering for</div>
+          <div class="row-control">
+            <div class="seg-control">
+              <input type="radio" id="who-self" name="demo-who" value="self" checked>
+              <label for="who-self">Myself</label>
+              <input type="radio" id="who-other" name="demo-who" value="other">
+              <label for="who-other">Someone else</label>
+            </div>
+          </div>
+        </div>
+        <div class="row" id="relationship-row" style="display:none;">
+          <div class="row-label">Relationship</div>
+          <div class="row-control">
+            <input id="demo-relationship" type="text" placeholder="Parent, guardian, spouse" />
+            <span class="optional">Optional</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="group" id="patient-info-group">
+        <div class="group-title">Patient information</div>
+        <div class="row">
+          <div class="row-label">Name</div>
+          <div class="row-control">
+            <input id="demo-patient-name" type="text" placeholder="First Last" autocomplete="name" required />
+          </div>
+        </div>
+        <div class="row">
+          <div class="row-label">Date of birth</div>
+          <div class="row-control">
+            <input id="demo-patient-dob" type="date" autocomplete="bday" required />
+          </div>
+        </div>
+      </section>
+
+      <section class="group" style="display:none;">
+        <div class="group-title">Background</div>
+        <div class="row">
+          <div class="row-label">Hispanic / Latino</div>
+          <div class="row-control">
+            <div class="seg-control">
+              <input type="radio" id="eth-yes" name="demo-eth" value="Yes">
+              <label for="eth-yes">Yes</label>
+              <input type="radio" id="eth-no" name="demo-eth" value="no">
+              <label for="eth-no">No</label>
+              <input type="radio" id="eth-na" name="demo-eth" value="">
+              <label for="eth-na">Prefer not</label>
+            </div>
+            <select id="eth-select" class="seg-fallback" aria-label="Hispanic or Latino" style="display:none;">
+              <option value="Yes">Yes</option>
+              <option value="no">No</option>
+              <option value="">Prefer not</option>
+            </select>
+          </div>
+        </div>
+        <div class="row">
+          <div class="row-label">Education level</div>
+          <div class="row-control">
+            <select id="demo-education">
+              <option value="">Prefer not to say</option>
+              <option value="some_high_school">Some High School</option>
+              <option value="high_school">Finished High School</option>
+              <option value="some_college">Some College</option>
+              <option value="college_degree">College Degree</option>
+              <option value="graduate_degree">Graduate/Professional Degree</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <section class="group" style="display:none;">
+        <div class="group-title">Language & accessibility</div>
+        <div class="row">
+          <div class="row-label">Primary language</div>
+          <div class="row-control">
+            <select id="demo-lang">
+              <option value="en">English</option>
+              <option value="es">Spanish</option>
+              <option value="Other">Other</option>
+              <option value="">Prefer not to say</option>
+            </select>
+          </div>
+        </div>
+        <div class="row">
+          <div class="row-label">Interpreter needed</div>
+          <div class="row-control">
+            <div class="seg-control">
+              <input type="radio" id="interp-yes" name="demo-interpreter" value="Yes">
+              <label for="interp-yes">Yes</label>
+              <input type="radio" id="interp-no" name="demo-interpreter" value="No">
+              <label for="interp-no">No</label>
+              <input type="radio" id="interp-na" name="demo-interpreter" value="">
+              <label for="interp-na">Prefer not</label>
+            </div>
+            <select id="interp-select" class="seg-fallback" aria-label="Interpreter needed" style="display:none;">
+              <option value="Yes">Yes</option>
+              <option value="No">No</option>
+              <option value="">Prefer not</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <section class="group" style="display:none;">
+        <div class="group-title">Understanding</div>
+        <div class="row">
+          <div class="row-label">Understanding medical info</div>
+          <div class="row-control">
+            <select id="demo-literacy">
+              <option value="">Prefer not to say</option>
+              <option value="very_easy">Very Easy</option>
+              <option value="somewhat_easy">Somewhat Easy</option>
+              <option value="somewhat_hard">Somewhat Hard</option>
+              <option value="very_hard">Very Hard</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <div class="form-actions">
+        <button id="start-chat-btn" disabled>Continue</button>
+      </div>
+    </div>
+
+    <!-- Info bottom sheet -->
+    <div id="info-sheet" class="sheet" aria-hidden="true">
+      <div class="sheet-backdrop"></div>
+      <div class="sheet-panel" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
+        <div class="sheet-header">
+          <div id="sheet-title" class="sheet-title">Why we ask</div>
+          <button class="icon-btn sheet-close" aria-label="Close">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+        <div class="sheet-body">
+          <p id="sheet-content">We ask about race to help ensure equitable care and understand health patterns across populations. Sharing is optional.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Profile modal (centered) -->
+    <div id="profile-modal" class="modal" aria-hidden="true">
+      <div class="modal-backdrop"></div>
+      <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+        <div class="modal-header">
+          <div id="modal-title" class="modal-title">Profile</div>
+          <button class="icon-btn modal-close" aria-label="Close">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="modal-row">
+            <label for="prof-name">Name</label>
+            <input id="prof-name" type="text" autocomplete="name" />
+          </div>
+          <div class="modal-row">
+            <label for="prof-dob">Date of birth</label>
+            <input id="prof-dob" type="date" autocomplete="bday" />
+          </div>
+          <div class="modal-row">
+            <label for="prof-gender">Gender</label>
+            <select id="prof-gender">
+              <option value="">Prefer not to say</option>
+              <option value="Female">Female</option>
+              <option value="Male">Male</option>
+              <option value="Non-Binary">Non-binary</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div class="modal-row">
+            <label for="prof-lang">Primary language</label>
+            <select id="prof-lang">
+              <option value="en">English</option>
+              <option value="es">Spanish</option>
+              <option value="Other">Other</option>
+              <option value="">Prefer not to say</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button id="modal-save" class="choice-submit">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Settings modal (Confirm settings) -->
+    <div id="settings-modal" class="modal" aria-hidden="true">
+      <div class="modal-backdrop"></div>
+      <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+        <div class="modal-header">
+          <div id="settings-title" class="modal-title">Confirm settings</div>
+          <button class="icon-btn settings-close" aria-label="Close">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="modal-row">
+            <label for="set-lang">Primary language</label>
+            <select id="set-lang">
+              <option value="en">English</option>
+              <option value="es">Spanish</option>
+              <option value="Other">Other</option>
+              <option value="">Prefer not to say</option>
+            </select>
+          </div>
+          <div class="modal-row">
+            <label for="set-interpreter">Interpreter needed</label>
+            <select id="set-interpreter">
+              <option value="">Prefer not to say</option>
+              <option value="Yes">Yes</option>
+              <option value="No">No</option>
+            </select>
+          </div>
+          <div class="modal-row">
+            <label for="set-education">Education level</label>
+            <select id="set-education">
+              <option value="">Prefer not to say</option>
+              <option value="some_high_school">Some High School</option>
+              <option value="high_school">Finished High School</option>
+              <option value="some_college">Some College</option>
+              <option value="college_degree">College Degree</option>
+              <option value="graduate_degree">Graduate/Professional Degree</option>
+            </select>
+          </div>
+          <div class="modal-row">
+            <label for="set-literacy">Understanding medical info</label>
+            <select id="set-literacy">
+              <option value="">Prefer not to say</option>
+              <option value="very_easy">Very Easy</option>
+              <option value="somewhat_easy">Somewhat Easy</option>
+              <option value="somewhat_hard">Somewhat Hard</option>
+              <option value="very_hard">Very Hard</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button id="settings-save" class="choice-submit">Confirm settings</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Confirm profile modal -->
+    <div id="confirm-modal" class="modal" aria-hidden="true">
+      <div class="modal-backdrop"></div>
+      <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
+        <div class="modal-header">
+          <div id="confirm-title" class="modal-title">Is this your information?</div>
+          <button class="icon-btn confirm-close" aria-label="Close">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div id="confirm-summary" class="confirm-summary"></div>
+        </div>
+        <div class="modal-actions">
+          <button id="confirm-edit" class="choice-submit">Edit</button>
+          <button id="confirm-yes" class="choice-submit">Looks correct</button>
+        </div>
+      </div>
+    </div>
+  <!-- History drawer -->
+  <aside id="history-drawer" class="drawer" aria-hidden="true">
+    <div class="drawer-backdrop"></div>
+    <div class="drawer-panel" role="dialog" aria-modal="true" aria-labelledby="history-title">
+      <div class="drawer-header">
+        <div id="history-title" class="drawer-title">Previous chats</div>
+        <button class="icon-btn drawer-close" aria-label="Close">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="drawer-body">
+        <ul id="history-list" class="history-list"></ul>
+      </div>
+    </div>
+  </aside>
+    <div id="post-submit" style="display: none;">
+      <h2>Thanks! You're set for next steps</h2>
+      <div id="post-progress" class="progress-2">
+        <div class="progress2-step current" data-label="Review last visit"></div>
+        <div class="progress2-step" data-label="OurDX prep"></div>
+      </div>
+      <div class="actions-2">
+        <button id="review-btn" class="action-card">
+          <div class="action-title">Review last visit</div>
+          <div class="action-sub">See notes and follow-ups</div>
+        </button>
+        <button id="ourdx-btn" class="action-card primary">
+          <div class="action-title">Complete the OurDX section</div>
+          <div class="action-sub">Prepare for your next visit</div>
+        </button>
+      </div>
+    </div>
+    <div id="chat-container" style="display: none;">
+      <div id="soap-tabs-chat" class="tabs" role="tablist" aria-label="SOAP sections" style="display:none;">
+        <button class="tab active" role="tab" aria-selected="true" aria-controls="soap-panel-subjective" id="soap-tab-subjective" data-tab="subjective">Subjective</button>
+        <button class="tab" role="tab" aria-selected="false" aria-controls="soap-panel-objective" id="soap-tab-objective" data-tab="objective">Objective</button>
+        <button class="tab" role="tab" aria-selected="false" aria-controls="soap-panel-assessment" id="soap-tab-assessment" data-tab="assessment">Assessment</button>
+        <button class="tab" role="tab" aria-selected="false" aria-controls="soap-panel-plan" id="soap-tab-plan" data-tab="plan">Plan</button>
+      </div>
+      <div id="progress"></div>
+      <div id="step" style="display:none;"></div>
+      <div id="chat"></div>
+      <div id="choices" style="margin-top: 8px;"></div>
+      <div id="input-row">
+        <input id="input" type="text" placeholder="Type your message..." />
+        <button id="mic-btn" class="icon-btn mic" aria-label="Voice input" title="Voice input">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="9" y="2" width="6" height="12" rx="3"/>
+            <path d="M12 16v4"/><path d="M8 12v2a4 4 0 0 0 8 0v-2"/>
+          </svg>
+        </button>
+        <button id="send-btn">Send</button>
+        <button id="summarize-btn">Summarize</button>
+      </div>
+      <div id="model-row" class="bottom-controls">
+        <label for="model-select">Model:</label>
+        <div class="select-wrap">
+          <select id="model-select" class="custom-select">
+            <option value="ollama|llama3:instruct">Ollama — llama3:instruct</option>
+            <option value="openai|gpt-5.2">OpenAI — gpt-5.2</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div id="review-container" style="display: none;">
+      <h2>Review your last visit</h2>
+      <div id="soap-tabs" class="tabs" role="tablist" aria-label="SOAP sections">
+        <button class="tab active" role="tab" aria-selected="true" aria-controls="panel-subjective" id="tab-subjective" data-tab="subjective">Subjective</button>
+        <button class="tab" role="tab" aria-selected="false" aria-controls="panel-objective" id="tab-objective" data-tab="objective">Objective</button>
+        <button class="tab" role="tab" aria-selected="false" aria-controls="panel-assessment" id="tab-assessment" data-tab="assessment">Assessment</button>
+        <button class="tab" role="tab" aria-selected="false" aria-controls="panel-plan" id="tab-plan" data-tab="plan">Plan</button>
+      </div>
+      <div id="soap-content" style="margin-top: 12px;">
+        <section id="panel-subjective" data-panel="subjective" role="tabpanel" aria-labelledby="tab-subjective">
+          <p style="color: var(--subtext);">Patient-reported symptoms, concerns, and history since last visit.</p>
+
+        </section>
+        <section id="panel-objective" data-panel="objective" role="tabpanel" aria-labelledby="tab-objective" style="display:none;">
+          <p style="color: var(--subtext);">Observed findings, vitals, and measurements.</p>
+          <div style="margin: 10px 0 20px; padding: 14px; border: 1px solid var(--border); border-radius: 12px; background: var(--tint);">
+            <em>Objective notes placeholder.</em>
+          </div>
+        </section>
+        <section id="panel-assessment" data-panel="assessment" role="tabpanel" aria-labelledby="tab-assessment" style="display:none;">
+          <p style="color: var(--subtext);">Clinician’s impression and diagnoses.</p>
+          <div style="margin: 10px 0 20px; padding: 14px; border: 1px solid var(--border); border-radius: 12px; background: var(--tint);">
+            <em>Assessment notes placeholder.</em>
+          </div>
+        </section>
+        <section id="panel-plan" data-panel="plan" role="tabpanel" aria-labelledby="tab-plan" style="display:none;">
+          <p style="color: var(--subtext);">Treatments, follow-ups, and next steps.</p>
+          <div style="margin: 10px 0 20px; padding: 14px; border: 1px solid var(--border); border-radius: 12px; background: var(--tint);">
+            <em>Plan notes placeholder.</em>
+          </div>
+        </section>
+      </div>
+      <div class="actions-2">
+        <button id="continue-ourdx-btn" class="action-card primary">
+          <div class="action-title">Complete the OurDX section</div>
+          <div class="action-sub">Prepare for your next visit</div>
+        </button>
+      </div>
+    </div>
+    <div id="summary-container" style="display: none;">
+      <h2>Summary (JSON)</h2>
+      <pre id="summary"></pre>
+    </div>
+  </div>
+  <script src="/frontend/app.js?v=20260108"></script>
+</body>
+</html>
