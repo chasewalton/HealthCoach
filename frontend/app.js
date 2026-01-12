@@ -7,6 +7,7 @@ const inputEl = document.getElementById("input");
 const sendBtn = document.getElementById("send-btn");
 const summarizeBtn = document.getElementById("summarize-btn");
 const summaryEl = document.getElementById("summary");
+const summaryTextEl = document.getElementById("summary-text");
 const startBtn = document.getElementById("landing-continue") || document.getElementById("start-chat-btn");
 const settingsConfirmBtn = document.getElementById("start-chat-btn");
 const formEl = document.getElementById("demographics-form");
@@ -35,6 +36,7 @@ const askLandingEl = document.getElementById("ask-landing");
 const askCardReview = document.getElementById("ask-card-review");
 const askCardSurvey = document.getElementById("ask-card-survey");
 const navBackBtn = document.getElementById("nav-back");
+const newChatBtn = document.getElementById("nav-new-chat");
 const askHeadlineEl = document.querySelector(".ask-headline");
 const topbarEl = document.querySelector(".topbar");
 const navProfileBtn = document.getElementById("nav-profile");
@@ -71,6 +73,18 @@ const historyDrawer = document.getElementById("history-drawer");
 const historyClose = historyDrawer ? historyDrawer.querySelector(".drawer-close") : null;
 const historyBackdrop = historyDrawer ? historyDrawer.querySelector(".drawer-backdrop") : null;
 const historyList = document.getElementById("history-list");
+// Summary modal
+const summaryModal = document.getElementById("summary-modal");
+const summaryModalText = document.getElementById("summary-modal-text");
+const summaryCloseBtn = summaryModal ? summaryModal.querySelector(".summary-close") : null;
+const summaryBackdrop = summaryModal ? summaryModal.querySelector(".modal-backdrop") : null;
+const summaryOkBtn = document.getElementById("summary-modal-ok");
+const summaryShareBtn = document.getElementById("summary-share");
+const selectSummaryCb = document.getElementById("select-summary");
+const selectTranscriptCb = document.getElementById("select-transcript");
+const downloadSelectedBtn = document.getElementById("download-selected");
+const summarySwitchBtn = document.getElementById("summary-switch");
+let lastSummaryText = "";
 
 // Track the furthest section reached to avoid regressions in progress UI
 let furthestSectionIndex = 0;
@@ -189,6 +203,7 @@ function renderMessages() {
   chatEl.scrollTop = chatEl.scrollHeight;
   renderStep();
   renderChoices();
+  try { saveTranscriptServer(); } catch {}
 }
 
 function detectSectionIndex() {
@@ -320,7 +335,11 @@ function renderChoices() {
 }
 
 function currentProviderAndModel() {
-  const val = (modelSelectEl && modelSelectEl.value) || "ollama|llama3:instruct";
+  const saved = (() => { try { return localStorage.getItem("hc_model") || ""; } catch { return ""; } })();
+  if (modelSelectEl && saved && !modelSelectEl.value) {
+    modelSelectEl.value = saved;
+  }
+  const val = (modelSelectEl && modelSelectEl.value) || saved || "ollama|llama3:instruct";
   const [provider, model] = val.split("|");
   return { provider, model };
 }
@@ -330,6 +349,7 @@ async function sendDirect(text) {
   if (!trimmed) return;
   messages.push({ role: "user", content: trimmed });
   renderMessages();
+  try { localStorage.setItem("hc_current_session", JSON.stringify({ messages })); } catch {}
   sendBtn.disabled = true;
   try {
     const { provider, model } = currentProviderAndModel();
@@ -340,6 +360,7 @@ async function sendDirect(text) {
   } finally {
     sendBtn.disabled = false;
     renderMessages();
+    try { localStorage.setItem("hc_current_session", JSON.stringify({ messages })); } catch {}
   }
 }
 
@@ -362,6 +383,83 @@ async function apiGet(path) {
   return res.json();
 }
 
+function toSingleLine(s) {
+  return (s || "").toString().replace(/\s+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+}
+function valueToInline(v) {
+  if (v == null) return "";
+  if (typeof v === "string") return v.trim();
+  if (Array.isArray(v)) return v.map(valueToInline).filter(Boolean).join("; ");
+  if (typeof v === "object") {
+    const parts = Object.entries(v).map(([k, val]) => `${k.replace(/_/g, " ")}: ${valueToInline(val)}`.trim());
+    return parts.filter(Boolean).join(", ");
+  }
+  return String(v).trim();
+}
+function arrayToBullets(arr) {
+  const lines = (arr || []).map((v) => valueToInline(v)).filter(Boolean);
+  return lines.length ? "• " + lines.join("\n• ") : "";
+}
+function objectSectionsToText(obj) {
+  if (!obj || typeof obj !== "object") return "";
+  const preferredOrder = ["overview", "summary", "key_points", "highlights", "findings", "recommendations", "next_steps", "actions"];
+  const seen = new Set();
+  const sections = [];
+  for (const key of preferredOrder) {
+    if (obj[key] == null) continue;
+    seen.add(key);
+    const val = obj[key];
+    if (typeof val === "string") {
+      if (key === "overview" || key === "summary") {
+        sections.push(toSingleLine(val));
+      } else {
+        sections.push(`${key.replace(/_/g, " ")}:\n${arrayToBullets([val])}`);
+      }
+    } else if (Array.isArray(val)) {
+      const bullets = arrayToBullets(val);
+      if (bullets) sections.push(`${key.replace(/_/g, " ")}:\n${bullets}`);
+    } else if (typeof val === "object") {
+      const inline = valueToInline(val);
+      if (inline) sections.push(`${key.replace(/_/g, " ")}:\n• ${inline}`);
+    }
+  }
+  // Add remaining keys
+  for (const [k, v] of Object.entries(obj)) {
+    if (seen.has(k)) continue;
+    const label = k.replace(/_/g, " ");
+    if (typeof v === "string") {
+      const t = v.trim();
+      if (t) sections.push(`${label}:\n${arrayToBullets([t])}`);
+    } else if (Array.isArray(v)) {
+      const bullets = arrayToBullets(v);
+      if (bullets) sections.push(`${label}:\n${bullets}`);
+    } else if (typeof v === "object" && v) {
+      const inline = valueToInline(v);
+      if (inline) sections.push(`${label}:\n• ${inline}`);
+    } else if (v != null) {
+      sections.push(`${label}: ${String(v)}`);
+    }
+  }
+  return sections.filter(Boolean).join("\n\n").trim();
+}
+function formatSummaryText(resp) {
+  if (resp == null) return "";
+  if (typeof resp === "string") return toSingleLine(resp);
+  if (typeof resp === "object") {
+    const direct = resp.text || resp.reply || resp.message || resp.content;
+    if (typeof direct === "string" && direct.trim()) return toSingleLine(direct);
+    const s = resp.summary;
+    if (typeof s === "string" && s.trim()) return toSingleLine(s);
+    if (s && typeof s === "object") {
+      const shaped = objectSectionsToText(s);
+      if (shaped) return shaped;
+    }
+    const fallback = objectSectionsToText(resp);
+    if (fallback) return fallback;
+  }
+  return "";
+}
+
 // Generic JSON POST (for profile save)
 async function apiPostJson(path, body) {
   const res = await fetch(path, {
@@ -371,6 +469,56 @@ async function apiPostJson(path, body) {
   });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
+}
+
+// Server-backed transcript helpers
+function getProfile() {
+  try { return JSON.parse(localStorage.getItem("hc_profile") || "{}"); } catch { return {}; }
+}
+function profileKeyFrom(p) {
+  const n = (p.patient_name || p.name || "").trim().toLowerCase();
+  const d = (p.patient_dob || p.dob || "").trim();
+  return `${n}|${d}`;
+}
+function convStorageKey(pk) { return `hc_conv:${pk}`; }
+function getCurrentConversationId() {
+  const pk = profileKeyFrom(getProfile());
+  try { return localStorage.getItem(convStorageKey(pk)) || ""; } catch { return ""; }
+}
+function setCurrentConversationId(id) {
+  const pk = profileKeyFrom(getProfile());
+  try { if (id) localStorage.setItem(convStorageKey(pk), id); } catch {}
+}
+async function saveTranscriptServer() {
+  const p = getProfile();
+  const body = {
+    patient_name: p.patient_name || "",
+    patient_dob: p.patient_dob || "",
+    messages,
+  };
+  const existing = getCurrentConversationId();
+  if (existing) body.conversation_id = existing;
+  const resp = await apiPost("/transcripts/save", body);
+  if (resp && resp.id) setCurrentConversationId(resp.id);
+  return resp;
+}
+async function loadLatestTranscriptServer() {
+  const p = getProfile();
+  const q = `patient_name=${encodeURIComponent(p.patient_name || "")}&patient_dob=${encodeURIComponent(p.patient_dob || "")}`;
+  const list = await apiGet(`/transcripts/list?${q}`);
+  const items = (list && Array.isArray(list.items)) ? list.items : [];
+  const current = getCurrentConversationId();
+  const chosenId = current || (items[0] && items[0].id);
+  if (!chosenId) return false;
+  const doc = await apiGet(`/transcripts/get?id=${encodeURIComponent(chosenId)}&${q}`);
+  if (doc && Array.isArray(doc.messages)) {
+    messages.length = 0;
+    doc.messages.forEach(m => messages.push(m));
+    setCurrentConversationId(doc.id || chosenId);
+    renderMessages();
+    return true;
+  }
+  return false;
 }
 
 function withTimeout(promise, ms) {
@@ -458,6 +606,7 @@ async function sendMessage() {
   messages.push({ role: "user", content: text });
   inputEl.value = "";
   renderMessages();
+   try { localStorage.setItem("hc_current_session", JSON.stringify({ messages })); } catch {}
 
   sendBtn.disabled = true;
   try {
@@ -469,6 +618,7 @@ async function sendMessage() {
   } finally {
     sendBtn.disabled = false;
     renderMessages();
+    try { localStorage.setItem("hc_current_session", JSON.stringify({ messages })); } catch {}
   }
 }
 
@@ -478,11 +628,18 @@ async function summarize() {
   const originalText = summarizeBtn.textContent;
   try {
     const { provider, model } = currentProviderAndModel();
-    await apiPost("/summarize", { messages, provider, model });
-    // Do not show JSON in UI; give a light confirmation on the button
-    summarizeBtn.textContent = "Saved";
-    // Save snapshot locally for history
-    saveTranscriptSnapshot();
+    const resp = await apiPost("/summarize", { messages, provider, model });
+    // Build a readable text summary from response
+    let textOut = formatSummaryText(resp);
+    if (!textOut) textOut = "No summary returned.";
+    if (summaryEl) summaryEl.textContent = "";
+    if (summaryTextEl) summaryTextEl.textContent = "";
+    if (summaryContainerEl) summaryContainerEl.style.display = "none";
+    // Also show the text summary in a centered modal
+    openSummaryModal(textOut || "No summary returned.");
+    summarizeBtn.textContent = "Summarized";
+    // Save snapshot locally for history (optional)
+    try { saveTranscriptSnapshot(); } catch {}
   } catch (e) {
     summarizeBtn.textContent = "Save failed";
     console.error("Summarize failed", e);
@@ -497,7 +654,16 @@ async function summarize() {
 sendBtn.addEventListener("click", sendMessage);
 summarizeBtn.addEventListener("click", summarize);
 inputEl.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") sendMessage();
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+});
+// Auto-grow textarea height up to a cap
+inputEl.addEventListener("input", () => {
+  inputEl.style.height = "auto";
+  const max = 160;
+  inputEl.style.height = Math.min(max, inputEl.scrollHeight) + "px";
 });
 
 function showPostSubmit() {
@@ -511,45 +677,33 @@ function showPostSubmit() {
 
 async function ensureChatStarted() {
   if (chatStarted) return;
-  // Initialize chat context from demographics
-  messages.push({ role: "system", content: buildDemographicsSystemContent(demographics || {}) });
-  // Fetch the first chatbot prompt
-  try {
-    const { provider, model } = currentProviderAndModel();
-    const data = await apiPost("/chat", {
-      messages,
-      language: demographics?.primary_language || "en",
-      provider,
-      model,
-    });
-    messages.push({ role: "assistant", content: data.reply });
-    renderMessages();
-    inputEl && inputEl.focus();
-  } catch (e) {
-    messages.push({
-      role: "assistant",
-      content:
-        "Unable to reach the server. Please ensure the backend is running at /chat.",
-    });
-    renderMessages();
-  } finally {
-    chatStarted = true;
+  // If there are already non-system messages (restored session), don't auto-send
+  const hasChat = messages.some(m => m.role === "user" || m.role === "assistant");
+  // Ensure a single system demographics message exists
+  if (!messages.find(m => m.role === "system")) {
+    messages.unshift({ role: "system", content: buildDemographicsSystemContent(demographics || {}) });
   }
+  renderMessages();
+  // Do NOT auto-call the backend; wait for user input
+  chatStarted = true;
 }
 
-function goToReview() {
+async function goToReview() {
   if (postSubmitEl) postSubmitEl.style.display = "none";
-  if (chatContainerEl) chatContainerEl.style.display = "none";
-  if (reviewContainerEl) reviewContainerEl.style.display = "block";
+  // Use nav helper so Back works (pushes previous view)
+  showSection(reviewContainerEl);
+  // Also show chat alongside review
+  if (chatContainerEl) chatContainerEl.style.display = "flex";
   setPostProgress(0);
   if (typeof activateSoapTab === "function") activateSoapTab("subjective");
+  await ensureChatStarted();
 }
 
 async function goToOurDX() {
   if (postSubmitEl) postSubmitEl.style.display = "none";
   if (reviewContainerEl) reviewContainerEl.style.display = "none";
   if (filesContainerEl) filesContainerEl.style.display = "none";
-  if (chatContainerEl) chatContainerEl.style.display = "block";
+  if (chatContainerEl) chatContainerEl.style.display = "flex";
   setSegmented("chat");
   // Step index 1 for OurDX
   setPostProgress(1);
@@ -651,6 +805,9 @@ function confirmSettings() {
     landingOptions.style.display = "block";
     landingOptions.scrollIntoView({ behavior: "smooth", block: "start" });
   }
+  // Hide subtitle when showing section chooser
+  const subtitleEl = document.querySelector(".page-subtitle");
+  if (subtitleEl) subtitleEl.style.display = "none";
 }
 
 if (startBtn) startBtn.addEventListener("click", showSettingsPage);
@@ -658,7 +815,10 @@ if (settingsConfirmBtn) settingsConfirmBtn.addEventListener("click", confirmSett
 if (settingsSaveBtn) settingsSaveBtn.addEventListener("click", confirmSettings);
 if (settingsCloseBtn) settingsCloseBtn.addEventListener("click", closeSettingsModal);
 if (settingsBackdrop) settingsBackdrop.addEventListener("click", closeSettingsModal);
-if (reviewBtn) reviewBtn.addEventListener("click", goToReview);
+if (reviewBtn) reviewBtn.addEventListener("click", async () => {
+  try { await loadLatestTranscriptServer(); } catch {}
+  await goToReview();
+});
 if (ourdxBtn) ourdxBtn.addEventListener("click", goToOurDX);
 if (continueOurdxBtn) continueOurdxBtn.addEventListener("click", goToOurDX);
 
@@ -732,7 +892,7 @@ if (soapTabsChatEl) {
 function showChat() {
   if (!chatContainerEl) return;
   setSegmented("chat");
-  chatContainerEl.style.display = "block";
+  chatContainerEl.style.display = "flex";
   if (filesContainerEl) filesContainerEl.style.display = "none";
 }
 function showFiles() {
@@ -744,6 +904,15 @@ function showFiles() {
 if (segChat) segChat.addEventListener("click", showChat);
 if (segFiles) segFiles.addEventListener("click", showFiles);
 if (segBackToChat) segBackToChat.addEventListener("click", showChat);
+if (modelSelectEl) {
+  try {
+    const saved = localStorage.getItem("hc_model");
+    if (saved) modelSelectEl.value = saved;
+  } catch {}
+  modelSelectEl.addEventListener("change", () => {
+    try { localStorage.setItem("hc_model", modelSelectEl.value); } catch {}
+  });
+}
 
 // Icons / actions
 if (micBtn) {
@@ -751,6 +920,7 @@ if (micBtn) {
     // Placeholder: voice input not implemented
     messages.push({ role: "assistant", content: "Voice input coming soon." });
     renderMessages();
+    try { localStorage.setItem("hc_current_session", JSON.stringify({ messages })); } catch {}
   });
 }
 if (connectRecordsBtn) {
@@ -765,8 +935,16 @@ let currentViewEl = null;
 const navStack = [];
 function updateBackButtonState() {
   if (!navBackBtn) return;
-  navBackBtn.disabled = navStack.length === 0;
-  navBackBtn.style.opacity = navStack.length === 0 ? 0.5 : 1;
+  const atRoot = currentViewEl && currentViewEl.id === "ask-landing";
+  // Back should be enabled on landing if login is hidden (options visible)
+  const loginFormEl = document.querySelector(".login-form");
+  const landingOptionsEl = document.getElementById("landing-options");
+  const loginHidden = !!(loginFormEl && loginFormEl.style.display === "none");
+  const optionsVisible = !!(landingOptionsEl && landingOptionsEl.style.display !== "none");
+  const landingSubstateCanGoBack = atRoot && (loginHidden || optionsVisible);
+  const canGoBack = navStack.length > 0 || (!atRoot && !!currentViewEl) || landingSubstateCanGoBack;
+  navBackBtn.disabled = !canGoBack;
+  navBackBtn.style.opacity = canGoBack ? 1 : 0.5;
 }
 function hideAllSections() {
   if (askLandingEl) askLandingEl.style.display = "none";
@@ -782,24 +960,61 @@ function showSection(el, options = {}) {
     navStack.push(currentViewEl);
   }
   hideAllSections();
-  el.style.display = "block";
+  // Use flex for chat container so input can stick to bottom
+  el.style.display = (el.id === "chat-container") ? "flex" : "block";
   currentViewEl = el;
   updateBackButtonState();
   if (topbarEl) topbarEl.style.display = "flex";
   window.scrollTo({ top: 0, behavior: "smooth" });
+  try { localStorage.setItem("hc_last_view", el.id || ""); } catch {}
 }
 function navigateBack() {
-  if (navStack.length === 0) return;
-  const prev = navStack.pop();
-  hideAllSections();
-  prev.style.display = "block";
-  currentViewEl = prev;
-  updateBackButtonState();
-  window.scrollTo({ top: 0, behavior: "smooth" });
+  // Special handling: if we are on landing and login is hidden (options visible), restore login fields
+  const onLanding = currentViewEl && currentViewEl.id === "ask-landing";
+  if (onLanding) {
+    const loginFormEl = document.querySelector(".login-form");
+    const landingOptionsEl = document.getElementById("landing-options");
+    const loginHidden = !!(loginFormEl && loginFormEl.style.display === "none");
+    const optionsVisible = !!(landingOptionsEl && landingOptionsEl.style.display !== "none");
+    if (loginHidden || optionsVisible) {
+      if (landingOptionsEl) landingOptionsEl.style.display = "none";
+      if (loginFormEl) loginFormEl.style.display = "block";
+      const subtitleEl = document.querySelector(".page-subtitle");
+      if (subtitleEl) subtitleEl.style.display = "";
+      updateBackButtonState();
+      try { localStorage.setItem("hc_last_view", "ask-landing"); } catch {}
+      return;
+    }
+  }
+  if (navStack.length > 0) {
+    const prev = navStack.pop();
+    hideAllSections();
+    prev.style.display = "block";
+    currentViewEl = prev;
+    updateBackButtonState();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    try { localStorage.setItem("hc_last_view", currentViewEl.id || ""); } catch {}
+    return;
+  }
+  // Fallback: if no history in stack, go to landing OPTIONS (not login)
+  if (askLandingEl) {
+    showSection(askLandingEl, { replace: true });
+    const loginFormEl = document.querySelector(".login-form");
+    const landingOptionsEl = document.getElementById("landing-options");
+    if (loginFormEl) loginFormEl.style.display = "none";
+    if (landingOptionsEl) landingOptionsEl.style.display = "block";
+    const subtitleEl = document.querySelector(".page-subtitle");
+    if (subtitleEl) subtitleEl.style.display = "none";
+    try { localStorage.setItem("hc_last_view", "ask-landing"); } catch {}
+  }
 }
 if (askCardReview) askCardReview.addEventListener("click", async () => {
   showSection(reviewContainerEl);
   if (typeof activateSoapTab === "function") activateSoapTab("subjective");
+  if (chatContainerEl) chatContainerEl.style.display = "flex";
+  setPostProgress(0);
+  try { await loadLatestTranscriptServer(); } catch {}
+  ensureChatStarted();
 });
 if (askCardSurvey) askCardSurvey.addEventListener("click", async () => {
   showSection(chatContainerEl);
@@ -811,10 +1026,57 @@ if (navBackBtn) {
   navBackBtn.addEventListener("click", navigateBack);
 }
 
-// Default view: show the landing hero with login inputs and options
-if (askLandingEl) {
-  showSection(askLandingEl, { replace: true });
+// Start a new chat for the current patient
+async function startNewChat() {
+  // Clear current conversation id so server creates a new one
+  try {
+    const p = getProfile();
+    const pk = profileKeyFrom(p);
+    localStorage.removeItem(`hc_conv:${pk}`);
+  } catch {}
+  // Reset chat UI/state
+  messages.length = 0;
+  chatStarted = false;
+  if (chatEl) chatEl.innerHTML = "";
+  // Use nav helper so Back works
+  showSection(chatContainerEl);
+  // Ensure demographics system message and render
+  await ensureChatStarted();
+  // Persist empty conversation to get new id
+  try { await saveTranscriptServer(); } catch {}
 }
+if (newChatBtn) newChatBtn.addEventListener("click", startNewChat);
+
+// Restore last view if present; otherwise show landing
+(async function restoreLastView() {
+  let last = "";
+  try { last = localStorage.getItem("hc_last_view") || ""; } catch {}
+  const byId = (id) => id ? document.getElementById(id) : null;
+  if (last) {
+    const el = byId(last);
+    if (el) {
+      if (last === "review-container") {
+        showSection(reviewContainerEl, { replace: true });
+        if (chatContainerEl) chatContainerEl.style.display = "flex";
+        setPostProgress(0);
+        try { await loadLatestTranscriptServer(); } catch {}
+        ensureChatStarted();
+        return;
+      }
+      if (last === "chat-container") {
+        showSection(chatContainerEl, { replace: true });
+        try { await loadLatestTranscriptServer(); } catch {}
+        ensureChatStarted();
+        return;
+      }
+      showSection(el, { replace: true });
+      return;
+    }
+  }
+  if (askLandingEl) {
+    showSection(askLandingEl, { replace: true });
+  }
+})();
 
 // Profile modal wiring
 function setProfileFields(data) {
@@ -837,7 +1099,6 @@ function openProfileModal(options) {
       try { setProfileFields(JSON.parse(localStorage.getItem("hc_profile") || "{}")); } catch { setProfileFields({}); }
     }
   } else {
-    // Open empty for new users
     setProfileFields({});
   }
   modalEl.setAttribute("aria-hidden", "false");
@@ -858,7 +1119,6 @@ if (modalSaveBtn) {
       sex: modalFields.gender ? modalFields.gender.value : "",
       primary_language: modalFields.lang ? modalFields.lang.value : "",
     };
-    // Persist profile for future openings via profile icon
     try { localStorage.setItem("hc_profile", JSON.stringify(p)); } catch {}
     if (askHeadlineEl) {
       const name = p.patient_name || "there";
@@ -868,7 +1128,6 @@ if (modalSaveBtn) {
   });
 }
 
-// Close modal on Escape
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape" && modalEl && modalEl.getAttribute("aria-hidden") === "false") {
     e.preventDefault();
@@ -877,6 +1136,10 @@ document.addEventListener("keydown", (e) => {
   if (e.key === "Escape" && confirmModal && confirmModal.getAttribute("aria-hidden") === "false") {
     e.preventDefault();
     closeConfirmModal();
+  }
+  if (e.key === "Escape" && summaryModal && summaryModal.getAttribute("aria-hidden") === "false") {
+    e.preventDefault();
+    closeSummaryModal();
   }
 });
 
@@ -912,34 +1175,46 @@ function closeConfirmModal() {
 if (confirmCloseBtn) confirmCloseBtn.addEventListener("click", closeConfirmModal);
 if (confirmBackdrop) confirmBackdrop.addEventListener("click", closeConfirmModal);
 
-// History drawer
-function renderHistory() {
+async function renderHistory() {
   if (!historyList) return;
-  let items = [];
-  try { items = JSON.parse(localStorage.getItem("hc_transcripts") || "[]"); } catch {}
   historyList.innerHTML = "";
-  if (items.length === 0) {
-    const li = document.createElement("li");
-    li.textContent = "No previous chats yet.";
-    historyList.appendChild(li);
-    return;
-  }
-  items.slice().reverse().forEach((t, idx) => {
-    const li = document.createElement("li");
-    const date = new Date(t.timestamp || Date.now()).toLocaleString();
-    li.textContent = `${t.title || "Chat"} • ${date}`;
-    li.addEventListener("click", () => {
-      // Load transcript into chat
-      if (Array.isArray(t.messages)) {
-        messages.length = 0;
-        t.messages.forEach(m => messages.push(m));
-        showSection(chatContainerEl);
-        renderMessages();
-      }
-      if (historyDrawer) historyDrawer.setAttribute("aria-hidden", "true");
+  try {
+    const p = getProfile();
+    const q = `patient_name=${encodeURIComponent(p.patient_name || "")}&patient_dob=${encodeURIComponent(p.patient_dob || "")}`;
+    const list = await apiGet(`/transcripts/list?${q}`);
+    const items = (list && Array.isArray(list.items)) ? list.items : [];
+    if (items.length === 0) {
+      const li = document.createElement("li");
+      li.textContent = "No previous chats yet.";
+      historyList.appendChild(li);
+      return;
+    }
+    items.forEach((t) => {
+      const li = document.createElement("li");
+      const dateStr = t.updated_at || t.created_at || null;
+      const date = dateStr ? new Date(dateStr).toLocaleString() : "";
+      li.textContent = `Chat • ${date}`;
+      li.addEventListener("click", async () => {
+        try {
+          const doc = await apiGet(`/transcripts/get?id=${encodeURIComponent(t.id)}&${q}`);
+          if (doc && Array.isArray(doc.messages)) {
+            messages.length = 0;
+            doc.messages.forEach(m => messages.push(m));
+            setCurrentConversationId(doc.id || t.id);
+            showSection(chatContainerEl);
+            renderMessages();
+          }
+        } finally {
+          if (historyDrawer) historyDrawer.setAttribute("aria-hidden", "true");
+        }
+      });
+      historyList.appendChild(li);
     });
+  } catch (e) {
+    const li = document.createElement("li");
+    li.textContent = "Failed to load history.";
     historyList.appendChild(li);
-  });
+  }
 }
 function openHistory() {
   if (!historyDrawer) return;
@@ -953,7 +1228,91 @@ if (navHistoryBtn) navHistoryBtn.addEventListener("click", openHistory);
 if (historyClose) historyClose.addEventListener("click", closeHistory);
 if (historyBackdrop) historyBackdrop.addEventListener("click", closeHistory);
 
-// Save transcripts after summarize
+function openSummaryModal(text) {
+  if (!summaryModal) return;
+  const t = (text || "").trim();
+  lastSummaryText = t;
+  if (summaryModalText) summaryModalText.textContent = t;
+  // Configure dynamic "switch" button label and action
+  if (summarySwitchBtn) {
+    const onReview = currentViewEl && currentViewEl === reviewContainerEl;
+    const onChat = currentViewEl && currentViewEl === chatContainerEl;
+    const label = onReview ? "Go to OurDX" : "Go to Review";
+    const span = summarySwitchBtn.querySelector("span");
+    if (span) span.textContent = label;
+    summarySwitchBtn.onclick = async () => {
+      closeSummaryModal();
+      try {
+        if (onReview) {
+          await goToOurDX();
+        } else {
+          await goToReview();
+        }
+      } catch {}
+    };
+  }
+  summaryModal.setAttribute("aria-hidden", "false");
+  document.body.classList.add("modal-open");
+}
+function closeSummaryModal() {
+  if (summaryModal) summaryModal.setAttribute("aria-hidden", "true");
+  document.body.classList.remove("modal-open");
+}
+if (summaryCloseBtn) summaryCloseBtn.addEventListener("click", closeSummaryModal);
+if (summaryBackdrop) summaryBackdrop.addEventListener("click", closeSummaryModal);
+if (summaryOkBtn) summaryOkBtn.addEventListener("click", closeSummaryModal);
+// Removed individual download buttons; unified ZIP download via "Download" button
+if (summaryShareBtn) {
+  summaryShareBtn.addEventListener("click", () => {
+    const p = getProfile();
+    const name = (p.patient_name || "").trim();
+    const subject = `Conversation summary${name ? " — " + name : ""}`;
+    const body = (summaryModalText?.textContent || "").trim();
+    const mailto = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    try { window.open(mailto, "_blank"); } catch { window.location.href = mailto; }
+  });
+}
+if (downloadSelectedBtn) {
+  downloadSelectedBtn.addEventListener("click", () => {
+    const includeSummary = !!(selectSummaryCb && selectSummaryCb.checked);
+    const includeTranscript = !!(selectTranscriptCb && selectTranscriptCb.checked);
+    if (!includeSummary && !includeTranscript) return;
+    const p = getProfile();
+    const name = (p.patient_name || "patient").trim();
+    const dob = (p.patient_dob || "").trim();
+    const ts = new Date().toISOString().replace(/[:.]/g, "-");
+    const base = [name, dob].filter(Boolean).join("_") || "chat";
+
+    // Trigger individual downloads (no ZIP)
+    if (includeSummary) {
+      const filename = `summary_${base}_${ts}.txt`.toLowerCase().replace(/\s+/g, "_");
+      const text = (lastSummaryText || summaryModalText?.textContent || "").trim();
+      const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+    if (includeTranscript) {
+      const filename = `transcript_${base}_${ts}.json`.toLowerCase().replace(/\s+/g, "_");
+      const data = JSON.stringify({ messages }, null, 2);
+      const blob = new Blob([data], { type: "application/json;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+  });
+}
+
 function saveTranscriptSnapshot() {
   const snapshot = {
     id: Date.now(),
