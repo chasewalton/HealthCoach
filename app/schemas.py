@@ -14,6 +14,8 @@ class ChatRequest(BaseModel):
     language: Optional[str] = None
     provider: Optional[str] = None  # "ollama" | "openai"
     model: Optional[str] = None     # e.g., "llama3:instruct" or "gpt-5.2"
+    mode: Optional[str] = None      # "ourdx" (default) | "review"
+    review_record: Optional[str] = None  # optional YAML/text for review mode
 
 
 class ChatResponse(BaseModel):

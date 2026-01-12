@@ -148,7 +148,7 @@ USER: Mostly tired and less active.
 ASSISTANT: When you say “less active,” is that during school, after-school activities, or at home?
 USER: Mostly at home.
 
-ASSISTANT: Thank you. Do you feel Liam’s main health concerns have been heard by his healthcare providers so far? (Completely / Somewhat / Not at all / Haven’t discussed yet)
+ASSISTANT: Thank you. Do you feel Liam’s main health concerns have been heard by his healthcare providers so far? 
 USER: Somewhat.
 
 ASSISTANT: Have you had any problems or delays with tests, results, referrals, or appointments?
@@ -159,3 +159,64 @@ USER: His provider listens well.
 
 ASSISTANT: Thank you for sharing this. Your responses will help the healthcare team prepare for your visit. Please remind your healthcare provider that you completed this questionnaire. If you have urgent concerns, contact your clinic or local emergency services.
 """
+
+# Review chat (SOAP) system prompt
+REVIEW_SOAP_PROMPT = """
+You are Review, a clinical chart review assistant.
+
+Your job:
+1) Load the patient’s most recent note (provided below as 'Last record').
+2) Conduct a structured review using SOAP format:
+   - Subjective: clarify symptoms, history, changes since last note.
+   - Objective: verify vitals, exam findings, and relevant labs/imaging.
+   - Assessment: synthesize top problems and differential, linked to findings.
+   - Plan: outline next steps with rationale and follow-up.
+
+Behavioral rules:
+- Ask targeted, stepwise questions to complete each SOAP section.
+- Keep tone professional, succinct, and clinically focused.
+- Avoid re-asking for info already present in the last note unless clarification is needed.
+- If data conflicts, surface the discrepancy and ask which to trust.
+- Maintain a Running Summary after each turn (≤6 bullets, problem-oriented, action-focused).
+- When sufficient information is gathered, present a Final Summary in SOAP format.
+- If a last record is unavailable, state that and proceed with minimal necessary questions.
+- Do not provide medical advice; ask clarifying questions and organize information.
+
+Output structure for each turn:
+1) Next question(s) for the current SOAP section (1–3 concise questions).
+2) A short “Why this matters” line only if non-obvious.
+3) Running Summary (≤6 bullets).
+
+Invisible tag for UI:
+- At the very end of EACH assistant message, append one hidden marker indicating the current SOAP section:
+  [SOAP:subjective] or [SOAP:objective] or [SOAP:assessment] or [SOAP:plan]
+  Do not explain this marker.
+""".strip()
+
+# Default fake last record (used when none supplied)
+REVIEW_FAKE_LAST_RECORD = """
+patientId: 12345
+date: 2026-01-05
+noteType: Follow-up
+subjective:
+  chiefComplaint: "Intermittent chest discomfort for 2 weeks"
+  hpi: "Non-exertional, 3/10 pressure, lasts ~5–10 min, no radiation"
+  ros: "No dyspnea, no palpitations, occasional heartburn"
+objective:
+  vitals: { BP: "128/78", HR: 72, RR: 14, Temp: "36.7 C", SpO2: "98%" }
+  exam: "Normal cardiac exam, clear lungs, no edema"
+  tests:
+    - "EKG (2025-12-28): normal sinus rhythm"
+    - "Lipid panel (2025-10-10): TC 220, LDL 140, HDL 42, TG 180"
+assessment:
+  - "Atypical chest pain—likely GERD vs. musculoskeletal; low suspicion ACS"
+  - "Hyperlipidemia, suboptimally controlled"
+plan:
+  - "Trial PPI daily x14 days"
+  - "Diet/exercise counseling; consider statin if LDL persists >130"
+  - "Return precautions; follow-up in 2–4 weeks"
+meds:
+  - "Omeprazole 20 mg qAM (new)"
+  - "No statin currently"
+allergies: "NKDA"
+""".strip()

@@ -1,5 +1,6 @@
 const messages = [];
 let demographics = null;
+let chatMode = "ourdx"; // "ourdx" | "review"
 
 const chatEl = document.getElementById("chat");
 const stepEl = document.getElementById("step");
@@ -96,6 +97,12 @@ const SECTIONS = [
   { id: "S3", label: "Getting it right" },
   { id: "S4", label: "Wrap-up" },
 ];
+const SOAP_STEPS = [
+  { id: "SOAP-S", label: "Subjective" },
+  { id: "SOAP-O", label: "Objective" },
+  { id: "SOAP-A", label: "Assessment" },
+  { id: "SOAP-P", label: "Plan" },
+];
 
 function setPostProgress(currentIndex) {
   if (!postProgressEl) return;
@@ -188,7 +195,7 @@ function renderMessages() {
     chunks.forEach((chunk) => {
       // Strip hidden markers and legacy tags from display
       const clean = chunk
-        .replace(/\[[^\]]*(?:S[1-4]|binary|mc|free)[^\]]*\]/gi, "")
+        .replace(/\[[^\]]*(?:S[1-4]|binary|mc|free|SOAP:(?:subjective|objective|assessment|plan))[^\]]*\]/gi, "")
         .replace(/\[(Q[^\]]+)\]/g, "")
         .trim();
       const row = document.createElement("div");
@@ -207,6 +214,20 @@ function renderMessages() {
 }
 
 function detectSectionIndex() {
+  // Review mode: detect SOAP marker
+  if (chatMode === "review") {
+    const assistants = [...messages].reverse().filter((m) => m.role === "assistant" && m.content);
+    for (const m of assistants) {
+      const soap = m.content.match(/\[SOAP:(subjective|objective|assessment|plan)\]/i);
+      if (soap) {
+        const map = { subjective: 0, objective: 1, assessment: 2, plan: 3 };
+        const idx = map[soap[1].toLowerCase()] ?? 0;
+        furthestSectionIndex = Math.max(furthestSectionIndex, idx);
+        return furthestSectionIndex;
+      }
+    }
+    return furthestSectionIndex;
+  }
   // Look from newest to oldest assistant message for a section hint
   const assistants = [...messages].reverse().filter((m) => m.role === "assistant" && m.content);
   for (const m of assistants) {
@@ -230,10 +251,11 @@ function detectSectionIndex() {
 }
 
 function renderStep() {
-  const currentIndex = Math.max(0, Math.min(SECTIONS.length - 1, detectSectionIndex()));
+  const steps = chatMode === "review" ? SOAP_STEPS : SECTIONS;
+  const currentIndex = Math.max(0, Math.min(steps.length - 1, detectSectionIndex()));
   if (!progressEl) return;
   progressEl.innerHTML = "";
-  SECTIONS.forEach((s, idx) => {
+  steps.forEach((s, idx) => {
     const step = document.createElement("div");
     step.className = "progress-step";
     step.dataset.label = s.label;
@@ -353,7 +375,14 @@ async function sendDirect(text) {
   sendBtn.disabled = true;
   try {
     const { provider, model } = currentProviderAndModel();
-    const data = await apiPost("/chat", { messages, language: demographics?.primary_language || "en", provider, model });
+    const payload = {
+      messages,
+      language: demographics?.primary_language || "en",
+      provider,
+      model,
+      ...(chatMode === "review" ? { mode: "review", review_record: defaultReviewRecord() } : { mode: "ourdx" }),
+    };
+    const data = await apiPost("/chat", payload);
     messages.push({ role: "assistant", content: data.reply });
   } catch (e) {
     messages.push({ role: "assistant", content: "Sorry—server error. Please try again." });
@@ -600,6 +629,91 @@ Style guidance: ${adapt}
 `.trim();
 }
 
+// ---- Review helpers ----
+function defaultReviewRecord() {
+  return `
+patientId: 12345
+date: 2026-01-05
+noteType: Follow-up
+subjective:
+  chiefComplaint: "Intermittent chest discomfort for 2 weeks"
+  hpi: "Non-exertional, 3/10 pressure, lasts ~5–10 min, no radiation"
+  ros: "No dyspnea, no palpitations, occasional heartburn"
+objective:
+  vitals: { BP: "128/78", HR: 72, RR: 14, Temp: "36.7 C", SpO2: "98%" }
+  exam: "Normal cardiac exam, clear lungs, no edema"
+  tests:
+    - "EKG (2025-12-28): normal sinus rhythm"
+    - "Lipid panel (2025-10-10): TC 220, LDL 140, HDL 42, TG 180"
+assessment:
+  - "Atypical chest pain—likely GERD vs. musculoskeletal; low suspicion ACS"
+  - "Hyperlipidemia, suboptimally controlled"
+plan:
+  - "Trial PPI daily x14 days"
+  - "Diet/exercise counseling; consider statin if LDL persists >130"
+  - "Return precautions; follow-up in 2–4 weeks"
+meds:
+  - "Omeprazole 20 mg qAM (new)"
+  - "No statin currently"
+allergies: "NKDA"
+`.trim();
+}
+
+async function startReviewConversation() {
+  // Start a new review chat: clear current conversation id and messages
+  try {
+    const p = getProfile();
+    const pk = profileKeyFrom(p);
+    localStorage.removeItem(`hc_conv:${pk}`);
+  } catch {}
+  messages.length = 0;
+  chatStarted = false;
+  if (chatEl) chatEl.innerHTML = "";
+  renderMessages();
+  // Immediately request the first assistant message using review mode + last record
+  try {
+    const { provider, model } = currentProviderAndModel();
+    const payload = {
+      messages,
+      language: demographics?.primary_language || "en",
+      provider,
+      model,
+      mode: "review",
+      review_record: defaultReviewRecord(),
+    };
+    const data = await apiPost("/chat", payload);
+    messages.push({ role: "assistant", content: data.reply });
+    renderMessages();
+    chatStarted = true;
+    try { await saveTranscriptServer(); } catch {}
+  } catch (e) {
+    messages.push({ role: "assistant", content: "Sorry—server error starting review." });
+    renderMessages();
+  }
+}
+
+async function startOurdxConversation() {
+  try {
+    await ensureChatStarted(); // inject demographics system message if needed
+    const { provider, model } = currentProviderAndModel();
+    const payload = {
+      messages,
+      language: demographics?.primary_language || "en",
+      provider,
+      model,
+      mode: "ourdx",
+    };
+    const data = await apiPost("/chat", payload);
+    messages.push({ role: "assistant", content: data.reply });
+    renderMessages();
+    chatStarted = true;
+    try { await saveTranscriptServer(); } catch {}
+  } catch (e) {
+    messages.push({ role: "assistant", content: "Sorry—server error starting OurDX." });
+    renderMessages();
+  }
+}
+
 async function sendMessage() {
   const text = inputEl.value.trim();
   if (!text) return;
@@ -611,7 +725,14 @@ async function sendMessage() {
   sendBtn.disabled = true;
   try {
     const { provider, model } = currentProviderAndModel();
-    const data = await apiPost("/chat", { messages, language: demographics?.primary_language || "en", provider, model });
+    const payload = {
+      messages,
+      language: demographics?.primary_language || "en",
+      provider,
+      model,
+      ...(chatMode === "review" ? { mode: "review", review_record: defaultReviewRecord() } : { mode: "ourdx" }),
+    };
+    const data = await apiPost("/chat", payload);
     messages.push({ role: "assistant", content: data.reply });
   } catch (e) {
     messages.push({ role: "assistant", content: "Sorry—server error. Please try again." });
@@ -680,8 +801,12 @@ async function ensureChatStarted() {
   // If there are already non-system messages (restored session), don't auto-send
   const hasChat = messages.some(m => m.role === "user" || m.role === "assistant");
   // Ensure a single system demographics message exists
-  if (!messages.find(m => m.role === "system")) {
-    messages.unshift({ role: "system", content: buildDemographicsSystemContent(demographics || {}) });
+  if (chatMode === "ourdx") {
+    if (!messages.find(m => m.role === "system")) {
+      messages.unshift({ role: "system", content: buildDemographicsSystemContent(demographics || {}) });
+    }
+  } else {
+    // review mode: do not inject demographics system context; backend receives review mode + last record
   }
   renderMessages();
   // Do NOT auto-call the backend; wait for user input
@@ -695,8 +820,9 @@ async function goToReview() {
   // Also show chat alongside review
   if (chatContainerEl) chatContainerEl.style.display = "flex";
   setPostProgress(0);
+  setChatMode("review");
   if (typeof activateSoapTab === "function") activateSoapTab("subjective");
-  await ensureChatStarted();
+  await startReviewConversation();
 }
 
 async function goToOurDX() {
@@ -707,7 +833,9 @@ async function goToOurDX() {
   setSegmented("chat");
   // Step index 1 for OurDX
   setPostProgress(1);
-  await ensureChatStarted();
+  setChatMode("ourdx");
+  // Start a fresh OurDX chat (clears messages and conversation id)
+  await startNewChat();
 }
 
 function openSettingsModal(prefill) {
@@ -816,7 +944,6 @@ if (settingsSaveBtn) settingsSaveBtn.addEventListener("click", confirmSettings);
 if (settingsCloseBtn) settingsCloseBtn.addEventListener("click", closeSettingsModal);
 if (settingsBackdrop) settingsBackdrop.addEventListener("click", closeSettingsModal);
 if (reviewBtn) reviewBtn.addEventListener("click", async () => {
-  try { await loadLatestTranscriptServer(); } catch {}
   await goToReview();
 });
 if (ourdxBtn) ourdxBtn.addEventListener("click", goToOurDX);
@@ -873,7 +1000,7 @@ function activateSoapTabChat(tabId) {
 }
 function setChatMode(mode) {
   chatMode = mode;
-  if (progressEl) progressEl.style.display = mode === "review" ? "none" : "flex";
+  if (progressEl) progressEl.style.display = "flex";
   if (soapTabsChatEl) soapTabsChatEl.style.display = mode === "review" ? "flex" : "none";
   if (mode === "review") {
     activateSoapTabChat("subjective");
@@ -1013,12 +1140,10 @@ if (askCardReview) askCardReview.addEventListener("click", async () => {
   if (typeof activateSoapTab === "function") activateSoapTab("subjective");
   if (chatContainerEl) chatContainerEl.style.display = "flex";
   setPostProgress(0);
-  try { await loadLatestTranscriptServer(); } catch {}
-  ensureChatStarted();
+  await goToReview();
 });
 if (askCardSurvey) askCardSurvey.addEventListener("click", async () => {
-  showSection(chatContainerEl);
-  await ensureChatStarted();
+  await goToOurDX();
 });
 
 // Topbar back: return to landing
@@ -1040,10 +1165,14 @@ async function startNewChat() {
   if (chatEl) chatEl.innerHTML = "";
   // Use nav helper so Back works
   showSection(chatContainerEl);
-  // Ensure demographics system message and render
-  await ensureChatStarted();
-  // Persist empty conversation to get new id
-  try { await saveTranscriptServer(); } catch {}
+  // Defer initialization to allow UI to render first
+  setTimeout(async () => {
+    if (chatMode === "review") {
+      await startReviewConversation();
+    } else {
+      await startOurdxConversation();
+    }
+  }, 0);
 }
 if (newChatBtn) newChatBtn.addEventListener("click", startNewChat);
 
@@ -1059,8 +1188,7 @@ if (newChatBtn) newChatBtn.addEventListener("click", startNewChat);
         showSection(reviewContainerEl, { replace: true });
         if (chatContainerEl) chatContainerEl.style.display = "flex";
         setPostProgress(0);
-        try { await loadLatestTranscriptServer(); } catch {}
-        ensureChatStarted();
+        await goToReview();
         return;
       }
       if (last === "chat-container") {

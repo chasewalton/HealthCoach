@@ -60,7 +60,13 @@ def chat():
     req = ChatRequest(**data)
     messages = [m.model_dump() for m in req.messages]
     client = get_client_for(getattr(req, "provider", "") or "", getattr(req, "model", "") or "")
-    reply_text = get_next_reply(client, messages, language=req.language)
+    reply_text = get_next_reply(
+        client,
+        messages,
+        language=req.language,
+        mode=getattr(req, "mode", None),
+        review_record=(data.get("review_record") or None),
+    )
     resp = ChatResponse(reply=reply_text)
     return jsonify(resp.model_dump())
 

@@ -47,7 +47,7 @@
 
   /* Fixed layout heights */
   --topbar-h: 50px;
-  --progress-h: 20px;
+  --progress-h: 0px;
   --composer-h: 60px;
 
   /* Back-compat */
