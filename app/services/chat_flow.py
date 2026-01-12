@@ -112,7 +112,7 @@ def get_next_reply(
 
         # Fallback for empty body
         if not re.search(r"\S", re.sub(r"\[(?:S[1-4]|binary|mc|free)\]", "", out)):
-            out = "What are the most important things you want to talk about at your visit?\n[S1]\n[free]"
+            out = "What are the most important things you want to talk about at your visit?"
         return out or raw
 
     return _clean(reply)

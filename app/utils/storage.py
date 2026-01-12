@@ -33,3 +33,24 @@ def write_text(path: str, text: str) -> None:
     ensure_parent_dir(path)
     with open(path, "w", encoding="utf-8") as f:
         f.write(text if text is not None else "")
+
+
+def read_json(path: str, default: Any = None) -> Any:
+    """Read JSON file, returning default if missing or invalid."""
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return default
+
+
+def list_files(dir_path: str, suffix: str = "") -> Iterable[str]:
+    """Yield absolute paths of files in dir_path (non-recursive), optionally filtered by suffix."""
+    if not os.path.isdir(dir_path):
+        return []
+    files = []
+    for name in os.listdir(dir_path):
+        full = os.path.join(dir_path, name)
+        if os.path.isfile(full) and (not suffix or name.endswith(suffix)):
+            files.append(full)
+    return sorted(files)
