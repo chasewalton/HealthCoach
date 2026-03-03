@@ -73,9 +73,10 @@ class OpenAIClient:
             raise RuntimeError(
                 "openai package is required for OpenAIClient. Install with `pip install openai`."
             ) from e
-        # Let SDK pick up OPENAI_API_KEY from env
+        # Let SDK pick up OPENAI_API_KEY from env; support OpenRouter via OPENAI_BASE_URL
         self._OpenAI = OpenAI
-        self._client = OpenAI()
+        base_url = os.getenv("OPENAI_BASE_URL", "").strip() or None
+        self._client = OpenAI(base_url=base_url) if base_url else OpenAI()
 
     def generate(
         self,
