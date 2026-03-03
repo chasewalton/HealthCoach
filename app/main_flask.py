@@ -2,7 +2,6 @@
 from flask import Flask, request, jsonify, send_file, redirect, session
 from flask_cors import CORS
 import os
-import secrets
 from app.llm_client import LlamaClient, OpenAIClient, create_client
 from app.schemas import ChatRequest, ChatResponse, SummarizeRequest, SummarizeResponse
 from app.services.chat_flow import get_next_reply
@@ -25,8 +24,10 @@ app = Flask(
     static_folder="../frontend",
     static_url_path="/frontend",
 )
-CORS(app)
-app.secret_key = os.getenv("SECRET_KEY", secrets.token_hex(32))
+CORS(app, supports_credentials=True)
+# Stable secret so sessions persist across restarts; set SECRET_KEY in production
+app.secret_key = os.getenv("SECRET_KEY") or "healthcoach-dev-secret-change-in-production"
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 
 default_client = create_client()
 

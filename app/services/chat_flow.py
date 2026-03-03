@@ -12,9 +12,12 @@ from app.prompts import (
     CONTEXT_ALREADY_ASKED_LABEL,
 )
 
-# Tokens per mode — generous enough for a question + markers + brief context
-MAX_TOKENS_OURDX = 400
-MAX_TOKENS_REVIEW = 400
+# Tokens per mode — enough for a question + markers; lower = faster generation
+MAX_TOKENS_OURDX = 250
+MAX_TOKENS_REVIEW = 250
+
+# Max messages to send (recent context only); reduces prompt size and latency
+MAX_CONTEXT_MESSAGES = 12
 
 # Pre-compiled regexes for _clean (avoids recompile on every call)
 _RE_SEC = re.compile(r"\[S([1-4])\]", re.I)
@@ -61,6 +64,8 @@ def get_next_reply(
     # SYSTEM message always present at top
     model_messages: List[Dict[str, str]] = [{"role": "system", "content": system_content}]
     conv_messages = [m for m in messages if m.get("role") != "system"]
+    if len(conv_messages) > MAX_CONTEXT_MESSAGES:
+        conv_messages = conv_messages[-MAX_CONTEXT_MESSAGES:]
     # When conversation is empty, inject a starter so model initiates first
     if not any(m.get("role") == "user" for m in conv_messages):
         starter = "Hi" if use_mode != "review" else "I'd like to review my last visit."

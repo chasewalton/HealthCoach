@@ -1218,6 +1218,7 @@ if (modalSaveBtn) {
     if (currentUser) {
       try {
         const res = await fetch("/auth/profile", {
+          credentials: "include",
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(fields),
@@ -1449,18 +1450,20 @@ function hideAuthScreen() {
 }
 
 function applyUserData({ username, profile }) {
-  currentUser = { username, profile };
+  const p = profile || {};
+  const uname = (username || "").trim();
+  currentUser = { username: uname, profile: p };
   demographics = {
-    patient_name: profile.display_name || username,
-    patient_dob: profile.dob || "",
-    primary_language: profile.primary_language || "en",
-    interpreter_needed: !!profile.interpreter_needed,
-    education_level: profile.education_level || "",
-    health_literacy: profile.health_literacy || "",
-    gender: profile.gender || "",
+    patient_name: (p.display_name || uname || "").trim(),
+    patient_dob: (p.dob || "").trim(),
+    primary_language: p.primary_language || "en",
+    interpreter_needed: !!p.interpreter_needed,
+    education_level: p.education_level || "",
+    health_literacy: p.health_literacy || "",
+    gender: p.gender || "",
   };
   const displayNameEl = document.getElementById("user-display-name");
-  if (displayNameEl) displayNameEl.textContent = profile.display_name || username;
+  if (displayNameEl) displayNameEl.textContent = (p.display_name || uname || "there").trim();
 }
 
 function onLoginSuccess({ username, profile }) {
@@ -1472,7 +1475,7 @@ function onLoginSuccess({ username, profile }) {
 
 async function initApp() {
   try {
-    const res = await fetch("/auth/me");
+    const res = await fetch("/auth/me", { credentials: "include" });
     if (res.ok) {
       const data = await res.json();
       onLoginSuccess(data);
@@ -1493,6 +1496,7 @@ async function doLogin() {
     const res = await fetch("/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({ username, password }),
     });
     const data = await res.json();
@@ -1525,6 +1529,7 @@ async function doRegister() {
     const res = await fetch("/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({ username, password, display_name: displayName }),
     });
     const data = await res.json();
@@ -1539,7 +1544,7 @@ async function doRegister() {
 }
 
 async function doLogout() {
-  await fetch("/auth/logout", { method: "POST" }).catch(() => {});
+  await fetch("/auth/logout", { method: "POST", credentials: "include" }).catch(() => {});
   currentUser = null;
   demographics = null;
   messages.length = 0;
