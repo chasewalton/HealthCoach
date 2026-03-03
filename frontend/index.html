@@ -116,6 +116,12 @@
           <path d="M20 21a8 8 0 1 0-16 0"/>
         </svg>
       </button>
+      <button id="nav-prompts" class="icon-btn" aria-label="Edit prompts" title="Edit prompts">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 6h16M4 12h10M4 18h7"/>
+          <path d="M18 14l4 4-4 4"/>
+        </svg>
+      </button>
     </div>
     <div id="demographics-form" class="grouped-form" style="display: none;">
       <div class="page-header">
@@ -337,6 +343,51 @@
         <div class="modal-actions">
           <button id="modal-save" class="choice-submit">Save</button>
           <button id="modal-logout" class="auth-link" style="margin-top: 12px; display: block; width: 100%; text-align: center; padding: 8px 0; color: var(--color-accent-semantic);">Log out</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Prompt editor modal -->
+    <div id="prompt-modal" class="modal" aria-hidden="true">
+      <div class="modal-backdrop"></div>
+      <div class="modal-panel prompt-modal-panel" role="dialog" aria-modal="true" aria-labelledby="prompt-modal-title">
+        <div class="modal-header">
+          <div id="prompt-modal-title" class="modal-title">Edit Prompts</div>
+          <button class="icon-btn prompt-modal-close" aria-label="Close">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+
+        <!-- Password gate -->
+        <div id="prompt-gate" class="modal-body">
+          <p style="font-size:14px;color:var(--color-subtext);margin-bottom:4px;">Enter the editor password to unlock prompts.</p>
+          <div class="modal-row">
+            <input id="prompt-gate-pw" type="password" placeholder="Editor password" autocomplete="current-password" />
+          </div>
+          <div id="prompt-gate-error" style="color:#e14848;font-size:13px;min-height:18px;"></div>
+        </div>
+        <div id="prompt-gate-actions" class="modal-actions">
+          <button id="prompt-gate-btn" class="choice-submit">Unlock</button>
+        </div>
+
+        <!-- Editor (hidden until unlocked) -->
+        <div id="prompt-editor" class="modal-body" style="display:none;">
+          <div class="prompt-editor-block">
+            <div class="prompt-editor-label">Survey Prompt</div>
+            <textarea id="pe-SURVEY_CONDUCTOR_PROMPT" class="prompt-editor-ta" spellcheck="false"></textarea>
+          </div>
+          <div class="prompt-editor-block">
+            <div class="prompt-editor-label">Few-Shot Examples</div>
+            <textarea id="pe-FEW_SHOT_EXAMPLES" class="prompt-editor-ta" spellcheck="false"></textarea>
+          </div>
+          <div class="prompt-editor-block">
+            <div class="prompt-editor-label">Review (Last Visit) Prompt</div>
+            <textarea id="pe-REVIEW_SOAP_PROMPT" class="prompt-editor-ta" spellcheck="false"></textarea>
+          </div>
+        </div>
+        <div id="prompt-editor-actions" class="modal-actions" style="display:none;">
+          <span id="prompt-save-status" style="font-size:13px;color:var(--color-subtext);margin-right:auto;"></span>
+          <button id="prompt-save-btn" class="choice-submit">Save all</button>
         </div>
       </div>
     </div>

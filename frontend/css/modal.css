@@ -43,6 +43,19 @@
 }
 .modal-actions { padding: 12px 18px; border-top: var(--border-1); display: flex; justify-content: flex-end; gap: 8px; }
 
+/* Prompt editor modal */
+.prompt-modal-panel { width: min(720px, 96vw); }
+.prompt-editor-block { display: flex; flex-direction: column; gap: 6px; }
+.prompt-editor-label { font-size: 12px; font-weight: 600; color: var(--color-subtext); text-transform: uppercase; letter-spacing: 0.04em; }
+.prompt-editor-ta {
+  width: 100%; min-height: 180px; padding: 12px 14px;
+  border: var(--border-1); border-radius: 12px; outline: none; resize: vertical;
+  font-family: "SF Mono", "Fira Code", ui-monospace, monospace;
+  font-size: 12px; line-height: 1.6;
+  background: var(--color-surface); color: var(--color-text);
+}
+.prompt-editor-ta:focus { border-color: var(--accent, #0a84ff); }
+
 /* Confirm summary inside modal */
 .confirm-summary { display: grid; gap: 8px; font-size: 14px; color: var(--color-text); }
 .confirm-summary .item { display: flex; gap: 8px; }

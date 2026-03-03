@@ -1561,3 +1561,108 @@ const regConfirmEl = document.getElementById("reg-confirm");
 if (regConfirmEl) regConfirmEl.addEventListener("keydown", (e) => {
   if (e.key === "Enter") { e.preventDefault(); doRegister(); }
 });
+
+// ─── Prompt Editor Modal ──────────────────────────────────────────────────────
+const promptModalEl       = document.getElementById("prompt-modal");
+const promptGateEl        = document.getElementById("prompt-gate");
+const promptGateActionsEl = document.getElementById("prompt-gate-actions");
+const promptEditorEl      = document.getElementById("prompt-editor");
+const promptEditorActEl   = document.getElementById("prompt-editor-actions");
+const promptGatePwEl      = document.getElementById("prompt-gate-pw");
+const promptGateErrorEl   = document.getElementById("prompt-gate-error");
+const promptGateBtn       = document.getElementById("prompt-gate-btn");
+const promptSaveBtn       = document.getElementById("prompt-save-btn");
+const promptSaveStatus    = document.getElementById("prompt-save-status");
+const navPromptsBtn       = document.getElementById("nav-prompts");
+const promptModalClose    = promptModalEl ? promptModalEl.querySelector(".prompt-modal-close") : null;
+const promptModalBackdrop = promptModalEl ? promptModalEl.querySelector(".modal-backdrop") : null;
+
+const PROMPT_KEYS = ["SURVEY_CONDUCTOR_PROMPT", "FEW_SHOT_EXAMPLES", "REVIEW_SOAP_PROMPT"];
+
+function openPromptModal() {
+  if (!promptModalEl) return;
+  promptModalEl.setAttribute("aria-hidden", "false");
+  // Reset to gate view — try loading; if session already has editor auth, go straight to editor
+  showPromptGate();
+  loadPromptsIfAuthed();
+}
+
+function closePromptModal() {
+  if (!promptModalEl) return;
+  promptModalEl.setAttribute("aria-hidden", "true");
+  if (promptGatePwEl) promptGatePwEl.value = "";
+  if (promptGateErrorEl) promptGateErrorEl.textContent = "";
+}
+
+function showPromptGate() {
+  if (promptGateEl) promptGateEl.style.display = "";
+  if (promptGateActionsEl) promptGateActionsEl.style.display = "";
+  if (promptEditorEl) promptEditorEl.style.display = "none";
+  if (promptEditorActEl) promptEditorActEl.style.display = "none";
+}
+
+function showPromptEditor() {
+  if (promptGateEl) promptGateEl.style.display = "none";
+  if (promptGateActionsEl) promptGateActionsEl.style.display = "none";
+  if (promptEditorEl) promptEditorEl.style.display = "";
+  if (promptEditorActEl) promptEditorActEl.style.display = "";
+}
+
+async function loadPromptsIfAuthed() {
+  try {
+    const res = await fetch("/editor/prompts");
+    if (!res.ok) return; // 401 → stay on gate
+    const data = await res.json();
+    PROMPT_KEYS.forEach(k => {
+      const ta = document.getElementById(`pe-${k}`);
+      if (ta) ta.value = data[k] || "";
+    });
+    showPromptEditor();
+  } catch { /* stay on gate */ }
+}
+
+async function unlockPrompts() {
+  if (!promptGatePwEl || !promptGateErrorEl) return;
+  promptGateErrorEl.textContent = "";
+  const password = promptGatePwEl.value;
+  try {
+    const res = await fetch("/editor/auth", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password }),
+    });
+    const data = await res.json();
+    if (!res.ok) { promptGateErrorEl.textContent = data.error || "Wrong password"; return; }
+    await loadPromptsIfAuthed();
+  } catch { promptGateErrorEl.textContent = "Network error"; }
+}
+
+async function savePrompts() {
+  if (!promptSaveBtn || !promptSaveStatus) return;
+  promptSaveBtn.disabled = true;
+  promptSaveStatus.textContent = "Saving…";
+  const payload = {};
+  PROMPT_KEYS.forEach(k => {
+    const ta = document.getElementById(`pe-${k}`);
+    if (ta) payload[k] = ta.value;
+  });
+  try {
+    const res = await fetch("/editor/prompts", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    promptSaveStatus.textContent = res.ok ? "Saved ✓" : "Save failed";
+  } catch { promptSaveStatus.textContent = "Network error"; }
+  finally {
+    promptSaveBtn.disabled = false;
+    setTimeout(() => { promptSaveStatus.textContent = ""; }, 3000);
+  }
+}
+
+if (navPromptsBtn) navPromptsBtn.addEventListener("click", openPromptModal);
+if (promptModalClose) promptModalClose.addEventListener("click", closePromptModal);
+if (promptModalBackdrop) promptModalBackdrop.addEventListener("click", closePromptModal);
+if (promptGateBtn) promptGateBtn.addEventListener("click", unlockPrompts);
+if (promptGatePwEl) promptGatePwEl.addEventListener("keydown", e => { if (e.key === "Enter") unlockPrompts(); });
+if (promptSaveBtn) promptSaveBtn.addEventListener("click", savePrompts);
