@@ -1,5 +1,5 @@
 # app/main_flask.py
-from flask import Flask, request, jsonify, send_file
+from flask import Flask, request, jsonify, send_file, redirect
 from flask_cors import CORS
 import os
 from app.llm_client import LlamaClient, OpenAIClient, create_client
@@ -43,10 +43,7 @@ def get_client_for(provider: str = "", model: str = ""):
 
 @app.get("/")
 def root():
-    return {
-        "message": "OurDX chatbot API (Flask) is running. "
-                   "Go to /ui for the chat interface, or use POST /chat and /summarize."
-    }
+    return redirect("/ui")
 
 
 # Simple route to return the main HTML file
