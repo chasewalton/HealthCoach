@@ -61,7 +61,7 @@ def ui():
 def auth_register():
     data = request.get_json(force=True) or {}
     username = (data.get("username") or "").strip().lower()
-    password = data.get("password") or ""
+    password = (data.get("password") or "").strip()
     display_name = (data.get("display_name") or "").strip()
     ok, err = register_user(username, password, display_name)
     if not ok:
@@ -75,7 +75,7 @@ def auth_register():
 def auth_login():
     data = request.get_json(force=True) or {}
     username = (data.get("username") or "").strip().lower()
-    password = data.get("password") or ""
+    password = (data.get("password") or "").strip()
     if not verify_user(username, password):
         return jsonify({"error": "Invalid username or password"}), 401
     session["username"] = username
@@ -113,7 +113,7 @@ def auth_profile_update():
 
 
 # ---- Prompt editor (password-gated) ----
-EDITOR_PASSWORD = os.getenv("EDITOR_PASSWORD", "editor")
+EDITOR_PASSWORD = (os.getenv("EDITOR_PASSWORD", "editor") or "editor").strip()
 
 _EDITABLE_PROMPTS = ["SURVEY_CONDUCTOR_PROMPT", "REVIEW_SOAP_PROMPT"]
 
@@ -126,7 +126,8 @@ def editor_ui():
 @app.post("/editor/auth")
 def editor_auth():
     data = request.get_json(force=True) or {}
-    if data.get("password") == EDITOR_PASSWORD:
+    password = (data.get("password") or "").strip()
+    if password == EDITOR_PASSWORD:
         session["editor"] = True
         return jsonify({"ok": True})
     return jsonify({"error": "Wrong password"}), 401
