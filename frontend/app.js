@@ -1577,7 +1577,7 @@ const navPromptsBtn       = document.getElementById("nav-prompts");
 const promptModalClose    = promptModalEl ? promptModalEl.querySelector(".prompt-modal-close") : null;
 const promptModalBackdrop = promptModalEl ? promptModalEl.querySelector(".modal-backdrop") : null;
 
-const PROMPT_KEYS = ["SURVEY_CONDUCTOR_PROMPT", "FEW_SHOT_EXAMPLES", "REVIEW_SOAP_PROMPT"];
+const PROMPT_KEYS = ["SURVEY_CONDUCTOR_PROMPT", "REVIEW_SOAP_PROMPT"];
 
 function openPromptModal() {
   if (!promptModalEl) return;

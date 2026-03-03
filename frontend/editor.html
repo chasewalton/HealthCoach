@@ -111,14 +111,6 @@
   <hr>
 
   <div class="prompt-block">
-    <div class="prompt-label">Few-Shot Examples</div>
-    <div class="prompt-desc">Example conversation shown to the model to teach format and marker usage.</div>
-    <textarea id="prompt-FEW_SHOT_EXAMPLES"></textarea>
-  </div>
-
-  <hr>
-
-  <div class="prompt-block">
     <div class="prompt-label">Review (Last Visit) Prompt</div>
     <div class="prompt-desc">System prompt for the "Review last visit" SOAP conversation mode.</div>
     <textarea id="prompt-REVIEW_SOAP_PROMPT"></textarea>
@@ -126,7 +118,7 @@
 </div>
 
 <script>
-  const PROMPTS = ["SURVEY_CONDUCTOR_PROMPT", "FEW_SHOT_EXAMPLES", "REVIEW_SOAP_PROMPT"];
+  const PROMPTS = ["SURVEY_CONDUCTOR_PROMPT", "REVIEW_SOAP_PROMPT"];
   let originals = {};
 
   // Auth gate

@@ -2,7 +2,7 @@
 from typing import List, Dict, Optional
 import re
 from ..llm_client import ChatClient
-from app.prompts import SURVEY_CONDUCTOR_PROMPT, FEW_SHOT_EXAMPLES, REVIEW_SOAP_PROMPT, REVIEW_FAKE_LAST_RECORD
+from app.prompts import SURVEY_CONDUCTOR_PROMPT, REVIEW_SOAP_PROMPT, REVIEW_FAKE_LAST_RECORD
 
 # Tokens per mode — generous enough for a question + markers + brief context
 MAX_TOKENS_OURDX = 350
@@ -31,7 +31,6 @@ def get_next_reply(
         survey_system = SURVEY_CONDUCTOR_PROMPT
         if language:
             survey_system += f"\n\nRespond in: {language}"
-        survey_system += "\n\n" + FEW_SHOT_EXAMPLES
         system_prompt = survey_system
 
     # Build hard constraints
@@ -45,7 +44,7 @@ def get_next_reply(
     else:
         constraints = [
             "Ask exactly ONE question per message — never bundle questions.",
-            "Always append the section marker ([S1]–[S4]) and question-type marker ([binary], [mc], or [free]) on separate lines after your question.",
+            "Always append the section marker ([S1]–[S4]) on its own line after your question.",
             "Do NOT repeat a question that has already been answered.",
             "No medical advice or coaching.",
         ]
@@ -88,19 +87,16 @@ def _clean(text: str, use_mode: str) -> str:
 
     # --- Extract hidden markers before processing ---
     sec_tag = None
-    qtype_tag = None
     soap_tag = None
 
     if use_mode != "review":
         sec_matches = re.findall(r"\[S([1-4])\]", raw, flags=re.I | re.M)
         sec_tag = f"[S{sec_matches[-1]}]" if sec_matches else None
-        qtype_matches = re.findall(r"\[(binary|mc|free)\]", raw, flags=re.I | re.M)
-        qtype_tag = f"[{qtype_matches[-1].lower()}]" if qtype_matches else None
     else:
         soap_matches = re.findall(r"\[SOAP:(subjective|objective|assessment|plan)\]", raw, flags=re.I | re.M)
         soap_tag = f"[SOAP:{soap_matches[-1].lower()}]" if soap_matches else None
 
-    # Strip all markers from visible text for clean processing
+    # Strip all markers from visible text for clean processing (including legacy [binary]/[mc]/[free] if model sends them)
     marker_pattern = r"\[(?:S[1-4]|binary|mc|free|SOAP:(?:subjective|objective|assessment|plan))\]"
     stripped = re.sub(marker_pattern, "", raw, flags=re.I).strip()
 
@@ -144,14 +140,6 @@ def _clean(text: str, use_mode: str) -> str:
     if use_mode != "review":
         if sec_tag and not re.search(r"\[S[1-4]\]", out, flags=re.I):
             out = f"{out}\n{sec_tag}"
-        if qtype_tag and not re.search(r"\[(binary|mc|free)\]", out, flags=re.I):
-            out = f"{out}\n{qtype_tag}"
-        # Infer question type if model forgot to include it
-        if not re.search(r"\[(binary|mc|free)\]", out, flags=re.I):
-            if has_list:
-                out = f"{out}\n[mc]"
-            elif re.search(r"\b(yes\s*/\s*no|yes or no)\b", raw, re.I):
-                out = f"{out}\n[binary]"
     else:
         if soap_tag and not re.search(r"\[SOAP:", out, flags=re.I):
             out = f"{out}\n{soap_tag}"
@@ -165,6 +153,6 @@ def _clean(text: str, use_mode: str) -> str:
         if use_mode == "review":
             out = "Has anything changed since your last visit on 2026-01-05?\n[SOAP:subjective]"
         else:
-            out = "What are the most important things you want to talk about at your visit?\n[S1]\n[free]"
+            out = "What are the most important things you want to talk about at your visit?\n[S1]"
 
     return out.strip()

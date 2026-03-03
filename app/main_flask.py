@@ -115,7 +115,7 @@ def auth_profile_update():
 # ---- Prompt editor (password-gated) ----
 EDITOR_PASSWORD = os.getenv("EDITOR_PASSWORD", "editor")
 
-_EDITABLE_PROMPTS = ["SURVEY_CONDUCTOR_PROMPT", "FEW_SHOT_EXAMPLES", "REVIEW_SOAP_PROMPT"]
+_EDITABLE_PROMPTS = ["SURVEY_CONDUCTOR_PROMPT", "REVIEW_SOAP_PROMPT"]
 
 
 @app.get("/editor")
