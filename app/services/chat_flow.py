@@ -14,8 +14,8 @@ from app.prompts import (
 )
 
 # Tokens per mode — generous enough for a question + markers + brief context
-MAX_TOKENS_OURDX = 350
-MAX_TOKENS_REVIEW = 350
+MAX_TOKENS_OURDX = 400
+MAX_TOKENS_REVIEW = 400
 
 def get_next_reply(
     llama: ChatClient,
