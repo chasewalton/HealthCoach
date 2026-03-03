@@ -1276,12 +1276,14 @@
         state.user = { username, displayName };
         state.profile.name = displayName;
         enterApp();
+        openProfileOnboarding('setup');
       } else {
         const u = users[username];
         if (u && u.password === password) {
           state.user = { username, displayName: u.displayName };
           state.profile.name = u.displayName;
           enterApp();
+          openProfileOnboarding('confirm');
         } else {
           errEl.textContent = 'Incorrect username or password.';
           errEl.classList.add('visible');
@@ -1294,6 +1296,14 @@
       showScreen('landing');
       updateLandingPersonalization();
       renderRecentList();
+    }
+
+    function openProfileOnboarding(mode) {
+      document.querySelector('#modal-profile .modal-title').textContent =
+        mode === 'setup' ? 'Set Up Your Profile' : 'Confirm Your Profile';
+      document.querySelector('#profile-form [type="submit"]').textContent =
+        mode === 'setup' ? 'Get Started →' : 'Looks Good →';
+      openProfile();
     }
 
     function handleSignOut() {
@@ -1769,6 +1779,8 @@
       state.profile.interpreter = document.getElementById('p-interpreter').value;
       state.profile.education   = document.getElementById('p-education').value;
       state.profile.model       = document.getElementById('p-model').value;
+      document.querySelector('#modal-profile .modal-title').textContent = 'Your Profile';
+      document.querySelector('#profile-form [type="submit"]').textContent = 'Save Profile';
       closeModal('modal-profile');
       updateLandingPersonalization();
       showToast('Profile saved ✓');
