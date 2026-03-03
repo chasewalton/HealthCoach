@@ -57,7 +57,7 @@ def init_db():
                 literacy    TEXT DEFAULT 'high',
                 interpreter TEXT DEFAULT 'no',
                 education   TEXT,
-                model_pref  TEXT DEFAULT 'gpt-4o'
+                model_pref  TEXT DEFAULT 'gpt-5.2'
             );
 
             CREATE TABLE IF NOT EXISTS records (
@@ -349,7 +349,7 @@ def chat():
 
     literacy = profile.get('literacy') or 'high'
     language = profile.get('language') or 'en'
-    model_pref = profile.get('model_pref') or 'gpt-4o'
+    model_pref = profile.get('model_pref') or 'gpt-5.2'
     model = MODEL_MAP.get(model_pref, 'openai/gpt-4o')
 
     # Build system prompt
