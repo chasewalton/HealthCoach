@@ -94,6 +94,7 @@ let lastSummaryText = "";
 // Track the furthest section reached to avoid regressions in progress UI
 let furthestSectionIndex = 0;
 let chatStarted = false;
+let chatLoading = false;
 
 const SECTIONS = [
   { id: "S1", label: "What matters most" },
@@ -201,6 +202,15 @@ function renderMessages() {
       chatEl.appendChild(row);
     });
   });
+  if (chatLoading) {
+    const row = document.createElement("div");
+    row.className = "message assistant loading-row";
+    const bubble = document.createElement("div");
+    bubble.className = "bubble assistant-bubble typing-indicator";
+    bubble.innerHTML = '<span></span><span></span><span></span>';
+    row.appendChild(bubble);
+    chatEl.appendChild(row);
+  }
   chatEl.scrollTop = chatEl.scrollHeight;
   renderStep();
   renderChoices();
@@ -367,6 +377,8 @@ async function sendDirect(text) {
   renderMessages();
   try { localStorage.setItem("hc_current_session", JSON.stringify({ messages })); } catch {}
   sendBtn.disabled = true;
+  chatLoading = true;
+  renderMessages();
   try {
     const { provider, model } = currentProviderAndModel();
     const payload = {
@@ -377,10 +389,12 @@ async function sendDirect(text) {
       ...(chatMode === "review" ? { mode: "review", review_record: defaultReviewRecord() } : { mode: "ourdx" }),
     };
     const data = await apiPost("/chat", payload);
-    messages.push({ role: "assistant", content: data.reply });
+    const reply = (data.reply || "").trim();
+    messages.push({ role: "assistant", content: reply || "No response. Check that your LLM (Ollama or OpenAI) is running and configured." });
   } catch (e) {
     messages.push({ role: "assistant", content: `Sorry—server error. (${e.message})` });
   } finally {
+    chatLoading = false;
     sendBtn.disabled = false;
     renderMessages();
     try { localStorage.setItem("hc_current_session", JSON.stringify({ messages })); } catch {}
@@ -669,7 +683,8 @@ async function startReviewConversation() {
   chatStarted = false;
   if (chatEl) chatEl.innerHTML = "";
   renderMessages();
-  // Immediately request the first assistant message using review mode + last record
+  chatLoading = true;
+  renderMessages();
   try {
     const { provider, model } = currentProviderAndModel();
     const payload = {
@@ -681,19 +696,23 @@ async function startReviewConversation() {
       review_record: defaultReviewRecord(),
     };
     const data = await apiPost("/chat", payload);
-    messages.push({ role: "assistant", content: data.reply });
-    renderMessages();
+    const reply = (data.reply || "").trim();
+    messages.push({ role: "assistant", content: reply || "No response. Check that your LLM (Ollama or OpenAI) is running and configured." });
     chatStarted = true;
     try { await saveTranscriptServer(); } catch {}
   } catch (e) {
     messages.push({ role: "assistant", content: `Sorry—server error starting review. (${e.message})` });
+  } finally {
+    chatLoading = false;
     renderMessages();
   }
 }
 
 async function startOurdxConversation() {
+  await ensureChatStarted(); // inject demographics system message if needed
+  chatLoading = true;
+  renderMessages();
   try {
-    await ensureChatStarted(); // inject demographics system message if needed
     const { provider, model } = currentProviderAndModel();
     const payload = {
       messages,
@@ -703,12 +722,14 @@ async function startOurdxConversation() {
       mode: "ourdx",
     };
     const data = await apiPost("/chat", payload);
-    messages.push({ role: "assistant", content: data.reply });
-    renderMessages();
+    const reply = (data.reply || "").trim();
+    messages.push({ role: "assistant", content: reply || "No response. Check that your LLM (Ollama or OpenAI) is running and configured." });
     chatStarted = true;
     try { await saveTranscriptServer(); } catch {}
   } catch (e) {
-    messages.push({ role: "assistant", content: "Sorry—server error starting Prepare for next visit." });
+    messages.push({ role: "assistant", content: `Sorry—server error starting Prepare for next visit. (${e.message})` });
+  } finally {
+    chatLoading = false;
     renderMessages();
   }
 }
@@ -722,6 +743,8 @@ async function sendMessage() {
    try { localStorage.setItem("hc_current_session", JSON.stringify({ messages })); } catch {}
 
   sendBtn.disabled = true;
+  chatLoading = true;
+  renderMessages();
   try {
     const { provider, model } = currentProviderAndModel();
     const payload = {
@@ -732,10 +755,12 @@ async function sendMessage() {
       ...(chatMode === "review" ? { mode: "review", review_record: defaultReviewRecord() } : { mode: "ourdx" }),
     };
     const data = await apiPost("/chat", payload);
-    messages.push({ role: "assistant", content: data.reply });
+    const reply = (data.reply || "").trim();
+    messages.push({ role: "assistant", content: reply || "No response. Check that your LLM (Ollama or OpenAI) is running and configured." });
   } catch (e) {
     messages.push({ role: "assistant", content: `Sorry—server error. (${e.message})` });
   } finally {
+    chatLoading = false;
     sendBtn.disabled = false;
     renderMessages();
     try { localStorage.setItem("hc_current_session", JSON.stringify({ messages })); } catch {}
