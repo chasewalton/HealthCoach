@@ -355,7 +355,7 @@ function currentProviderAndModel() {
   if (modelSelectEl && saved && !modelSelectEl.value) {
     modelSelectEl.value = saved;
   }
-  const val = (modelSelectEl && modelSelectEl.value) || saved || "openai|gpt-5";
+  const val = (modelSelectEl && modelSelectEl.value) || saved || "openai|gpt-5.2-2025-12-11";
   const [provider, model] = val.split("|");
   return { provider, model };
 }
