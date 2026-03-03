@@ -65,7 +65,7 @@ class LlamaClient:
 class OpenAIClient:
     def __init__(self) -> None:
         # Default to a cost-effective model; override with OPENAI_MODEL
-        self.model = os.getenv("OPENAI_MODEL", "gpt-5.2")
+        self.model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
         # Defer import so environments without openai still work for Ollama users
         try:
             from openai import OpenAI  # type: ignore
@@ -110,5 +110,7 @@ def create_client() -> ChatClient:
     """
     provider = (os.getenv("LLM_PROVIDER") or "").strip().lower()
     if provider == "openai":
+        return OpenAIClient()
+    if os.getenv("OPENAI_API_KEY"):
         return OpenAIClient()
     return LlamaClient()

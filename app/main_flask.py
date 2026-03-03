@@ -1,7 +1,8 @@
 # app/main_flask.py
 from flask import Flask, request, jsonify, send_file
+from flask_cors import CORS
 import os
-from app.llm_client import LlamaClient, OpenAIClient
+from app.llm_client import LlamaClient, OpenAIClient, create_client
 from app.schemas import ChatRequest, ChatResponse, SummarizeRequest, SummarizeResponse
 from app.services.chat_flow import get_next_reply
 from app.services.extract_structured import extract_structured
@@ -21,8 +22,9 @@ app = Flask(
     static_folder="../frontend",
     static_url_path="/frontend",
 )
+CORS(app)
 
-default_client = LlamaClient()
+default_client = create_client()
 
 def get_client_for(provider: str = "", model: str = ""):
     prov = (provider or "").strip().lower()
@@ -32,8 +34,8 @@ def get_client_for(provider: str = "", model: str = ""):
         if mdl:
             client.model = mdl
         return client
-    # default: ollama
-    client = LlamaClient()
+    # default: use smart provider detection
+    client = create_client()
     if mdl:
         client.model = mdl
     return client
@@ -175,6 +177,9 @@ def _slugify(s: str) -> str:
 
 
 def _app_data_dir() -> str:
+    data_dir = os.getenv("DATA_DIR", "")
+    if data_dir:
+        return os.path.abspath(data_dir)
     return os.path.abspath(os.path.join(os.path.dirname(__file__), "data"))
 
 
