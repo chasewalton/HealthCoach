@@ -1244,8 +1244,9 @@
               <label class="form-label">AI Model</label>
               <select class="form-input" id="p-model">
                 <option value="gpt-5.2">GPT-5.2 (Recommended)</option>
+                <option value="gpt-4.1">GPT-4.1</option>
                 <option value="gpt-4o">GPT-4o</option>
-                <option value="claude-3">Claude 3</option>
+                <option value="gpt-4o-mini">GPT-4o Mini (Faster)</option>
               </select>
             </div>
           </div>
@@ -1622,9 +1623,10 @@
       if (chips && chips.length) {
         const chipRow = document.createElement('div');
         chipRow.className = 'choice-chips';
-        chipRow.innerHTML = chips.map((c, i) =>
-          `<button class="chip" style="animation-delay:${i*0.08}s" onclick="selectChip('${c}',this.parentElement)">${c}</button>`
-        ).join('');
+        chipRow.innerHTML = chips.map((c, i) => {
+          const escaped = c.replace(/'/g, '&#39;');
+          return `<button class="chip" style="animation-delay:${i*0.08}s" onclick="selectChip('${escaped}',this.parentElement)">${c}</button>`;
+        }).join('');
         body.appendChild(chipRow);
       }
 

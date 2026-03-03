@@ -1,9 +1,10 @@
 import json
 
 MODEL_MAP = {
-    'gpt-5.2':  'openai/gpt-5.2-2025-12-11',
-    'gpt-4o':   'openai/gpt-4o',
-    'claude-3': 'anthropic/claude-3-5-sonnet',
+    'gpt-5.2':     'openai/gpt-5.2-2025-12-11',
+    'gpt-4.1':     'openai/gpt-4.1',
+    'gpt-4o':      'openai/gpt-4o',
+    'gpt-4o-mini': 'openai/gpt-4o-mini',
 }
 
 REVIEW_GUIDED = """You are HealthCoach, a warm and patient health literacy assistant helping a patient understand their recent clinic visit.

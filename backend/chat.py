@@ -11,10 +11,7 @@ chat_bp = Blueprint('chat', __name__)
 openai_client = OpenAI(
     api_key=os.environ.get('OPENROUTER_API_KEY', ''),
     base_url='https://openrouter.ai/api/v1',
-    default_headers={
-        'HTTP-Referer': os.environ.get('APP_URL', 'https://healthcoach-ai-bidmc.onrender.com'),
-        'X-Title': 'HealthCoach',
-    },
+    default_headers={'X-Title': 'HealthCoach'},
 )
 
 
@@ -38,7 +35,7 @@ def chat():
     literacy = profile.get('literacy') or 'high'
     language = profile.get('language') or 'en'
     model_pref = profile.get('model_pref') or 'gpt-5.2'
-    model = MODEL_MAP.get(model_pref, 'openai/gpt-4o')
+    model = MODEL_MAP.get(model_pref, 'openai/gpt-5.2-2025-12-11')
 
     system_prompt = get_system_prompt(mode, path, literacy, language, record if mode == 'review' else None)
 
