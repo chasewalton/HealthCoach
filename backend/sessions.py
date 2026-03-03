@@ -73,3 +73,15 @@ def get_session(session_id):
     except (json.JSONDecodeError, TypeError):
         msgs = []
     return jsonify(id=row['id'], mode=row['mode'], date=row['date_label'], messages=msgs)
+
+
+@sessions_bp.route('/api/sessions/<session_id>', methods=['DELETE'])
+def delete_session(session_id):
+    uid = require_auth()
+    with get_db() as conn:
+        result = conn.execute(
+            'DELETE FROM sessions WHERE id=? AND user_id=?', (session_id, uid)
+        )
+    if result.rowcount == 0:
+        return jsonify(error='Session not found'), 404
+    return jsonify(ok=True)

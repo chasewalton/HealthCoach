@@ -16,14 +16,20 @@
       --teal-50:  #F0FDF9;
       --teal-100: #CCFBF0;
       --teal-200: #99F6E0;
+      --teal-300: #5EEAD4;
       --teal-400: #2DD4BF;
       --teal-500: #0E9F8C;
       --teal-600: #0A7A6E;
       --teal-700: #0A6259;
       --teal-900: #083D37;
 
-      --coral-400: #FF8A7A;
-      --coral-500: #FF6B6B;
+      --coral-400: #F5856B;
+      --coral-500: #EF6347;
+      --coral-600: #D4512F;
+      --coral-700: #A83D20;
+      --coral-50:  rgba(239,99,71,0.06);
+      --coral-100: rgba(239,99,71,0.12);
+      --coral-200: rgba(239,99,71,0.24);
 
       --amber-400: #FBBF24;
 
@@ -291,6 +297,27 @@
       transition: transform 0.15s, box-shadow 0.15s;
     }
     .avatar-btn:hover { transform: scale(1.06); box-shadow: 0 4px 10px rgba(14,159,140,0.30); }
+    .note-chip {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      background: var(--color-surface);
+      border: 1.5px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      padding: 5px 10px;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+      text-align: left;
+    }
+    .note-chip:hover { border-color: var(--teal-300); background: var(--teal-50); }
+    .note-chip-icon { width: 14px; height: 14px; color: var(--neutral-400); flex-shrink: 0; }
+    .note-chip-text { display: flex; flex-direction: column; gap: 2px; }
+    .note-chip-status { font-size: 11px; font-weight: 700; color: var(--neutral-700); line-height: 1; }
+    .note-chip-cta { font-size: 10px; color: var(--neutral-400); font-weight: 500; line-height: 1; }
+    .note-chip.custom-active { border-color: var(--teal-200); background: var(--teal-50); }
+    .note-chip.custom-active .note-chip-icon { color: var(--teal-500); }
+    .note-chip.custom-active .note-chip-status { color: var(--teal-700); }
+    .note-chip.custom-active .note-chip-cta { color: var(--teal-500); }
 
     .landing-hero {
       padding: 48px 24px 0;
@@ -614,9 +641,9 @@
       padding: 8px 16px;
       border-radius: var(--radius-full);
       font-size: 14px; font-weight: 600;
-      border: 1.5px solid var(--color-primary);
-      color: var(--color-primary);
-      background: white;
+      border: 1.5px solid var(--chip-color, var(--teal-500));
+      color: var(--chip-color, var(--teal-500));
+      background: var(--chip-bg, white);
       cursor: pointer;
       transition: all 0.18s var(--easing-smooth);
       animation: chip-in 0.3s var(--easing-spring) both;
@@ -626,9 +653,9 @@
       to   { opacity: 1; transform: scale(1); }
     }
     .chip:hover {
-      background: var(--teal-50);
-      border-color: var(--teal-600);
-      color: var(--teal-700);
+      background: var(--chip-hover-bg, var(--teal-50));
+      border-color: var(--chip-hover-border, var(--teal-600));
+      color: var(--chip-hover-color, var(--teal-700));
       transform: translateY(-1px);
     }
     .chip:active { transform: scale(0.96); }
@@ -736,6 +763,339 @@
     }
     .summarize-btn:hover { background: var(--teal-100); border-color: var(--teal-300); }
     .summarize-btn svg { width: 14px; height: 14px; }
+
+    /* =====================
+       PREPARE MODE — coral overrides
+    ===================== */
+    #screen-chat.mode-prepare .chat-progress-fill {
+      background: linear-gradient(90deg, var(--coral-400), var(--coral-500));
+    }
+    #screen-chat.mode-prepare .section-pill.active {
+      border-color: var(--coral-500);
+      background: var(--coral-50);
+      color: var(--coral-700);
+    }
+    #screen-chat.mode-prepare .section-pill.done {
+      border-color: var(--coral-200);
+      background: var(--coral-50);
+      color: var(--coral-600);
+    }
+    #screen-chat.mode-prepare .msg-row.assistant .msg-avatar {
+      background: linear-gradient(135deg, var(--coral-400), var(--coral-500));
+    }
+    #screen-chat.mode-prepare .msg-row.user .msg-bubble {
+      background: linear-gradient(135deg, var(--coral-500), var(--coral-600));
+      box-shadow: 0 4px 12px rgba(255,107,107,0.25);
+    }
+    #screen-chat.mode-prepare .chip {
+      --chip-color:        var(--coral-500);
+      --chip-bg:           rgba(249, 245, 245, 0.04);
+      --chip-hover-bg:     var(--coral-50);
+      --chip-hover-border: var(--coral-600);
+      --chip-hover-color:  var(--coral-700);
+    }
+    #screen-chat.mode-prepare .summarize-btn {
+      color: var(--coral-600);
+      border-color: var(--coral-200);
+      background: var(--coral-50);
+    }
+    #screen-chat.mode-prepare .summarize-btn:hover {
+      background: var(--coral-100);
+      border-color: var(--coral-400);
+    }
+    #screen-chat.mode-prepare .send-btn {
+      background: linear-gradient(135deg, var(--coral-500), var(--coral-600));
+      box-shadow: 0 2px 8px rgba(255,107,107,0.30);
+    }
+    #screen-chat.mode-prepare .send-btn:hover {
+      box-shadow: 0 4px 12px rgba(255,107,107,0.40);
+    }
+    #screen-chat.mode-prepare .chat-input-wrap:focus-within {
+      border-color: var(--coral-500);
+      box-shadow: 0 0 0 3px rgba(255,107,107,0.10);
+    }
+    #screen-chat.mode-prepare .chat-bullet { color: var(--coral-500); }
+
+    /* =====================
+       PRIVACY MODAL
+    ===================== */
+    .privacy-points {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin: 20px 0;
+    }
+    .privacy-point {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      font-size: 14px;
+      line-height: 1.6;
+      color: var(--neutral-700);
+    }
+    .privacy-point-icon {
+      width: 32px; height: 32px;
+      border-radius: var(--radius-sm);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .privacy-point-icon svg { width: 16px; height: 16px; }
+    .privacy-point-icon.green  { background: var(--teal-50);           color: var(--teal-600); }
+    .privacy-point-icon.blue   { background: rgba(59,130,246,0.08);    color: #3B82F6; }
+    .privacy-point-icon.amber  { background: rgba(251,191,36,0.12);    color: #D97706; }
+    .privacy-point-icon.coral  { background: var(--coral-50);          color: var(--coral-600); }
+    .privacy-disclaimer-footer {
+      font-size: 12px;
+      color: var(--neutral-400);
+      margin-top: 16px;
+      line-height: 1.5;
+      text-align: center;
+    }
+
+    /* =====================
+       SHARE MODAL
+    ===================== */
+    .share-option {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 16px;
+      border-radius: var(--radius-md);
+      border: 1.5px solid var(--color-border-subtle);
+      cursor: pointer;
+      transition: all 0.18s var(--easing-smooth);
+      background: var(--color-surface);
+      text-align: left;
+      width: 100%;
+      margin-bottom: 10px;
+    }
+    .share-option:hover { border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(14,159,140,0.08); }
+    .share-option-icon {
+      width: 40px; height: 40px;
+      border-radius: var(--radius-sm);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .share-option-icon svg { width: 20px; height: 20px; }
+    .share-option-icon.teal  { background: var(--teal-50);  color: var(--teal-600); }
+    .share-option-icon.blue  { background: rgba(59,130,246,0.08); color: #3B82F6; }
+    .share-option-icon.coral { background: var(--coral-50); color: var(--coral-600); }
+    .share-option-body { flex: 1; }
+    .share-option-title { font-size: 14px; font-weight: 700; color: var(--neutral-800); }
+    .share-option-desc  { font-size: 12px; color: var(--neutral-500); margin-top: 2px; }
+    .share-delete-divider {
+      border: none;
+      border-top: 1px solid var(--color-border-subtle);
+      margin: 4px 0 10px;
+    }
+    .share-option.danger { border-color: rgba(255,107,107,0.2); }
+    .share-option.danger:hover { border-color: var(--coral-500); box-shadow: 0 0 0 3px rgba(255,107,107,0.08); }
+
+    /* Delete buttons in lists */
+    .recent-item { position: relative; }
+    .session-delete-btn {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 28px; height: 28px;
+      border-radius: var(--radius-xs);
+      display: none;
+      align-items: center; justify-content: center;
+      color: var(--neutral-400);
+      transition: all 0.15s;
+      flex-shrink: 0;
+    }
+    .session-delete-btn svg { width: 14px; height: 14px; }
+    .session-delete-btn:hover { background: rgba(255,107,107,0.1); color: var(--coral-500); }
+    .recent-item:hover .session-delete-btn { display: flex; }
+    .drawer-item { position: relative; }
+    .drawer-item:hover .session-delete-btn { display: flex; }
+
+    /* =====================
+       CHAT NOTE BUTTON (review mode, in header)
+    ===================== */
+    .chat-note-btn {
+      display: none;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--teal-600);
+      background: var(--teal-50);
+      border: 1.5px solid var(--teal-200);
+      border-radius: var(--radius-full);
+      padding: 5px 12px;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+      letter-spacing: 0.01em;
+      white-space: nowrap;
+    }
+    .chat-note-btn svg { width: 12px; height: 12px; flex-shrink: 0; }
+    .chat-note-btn:hover { background: var(--teal-100); border-color: var(--teal-300); }
+
+    /* =====================
+       NOTE MODAL REDESIGN
+    ===================== */
+    .note-modal-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: var(--radius-full);
+      background: var(--neutral-100);
+      margin-bottom: 14px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--neutral-500);
+      border: 1px solid var(--neutral-200);
+    }
+    .note-modal-badge-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--neutral-400);
+      flex-shrink: 0;
+    }
+    .note-modal-badge.custom-active { background: var(--teal-50); border-color: var(--teal-200); color: var(--teal-700); }
+    .note-modal-badge.custom-active .note-modal-badge-dot { background: var(--teal-500); }
+    .note-modal-preview {
+      background: var(--neutral-50);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      padding: 14px 16px;
+      font-size: 12.5px;
+      line-height: 1.75;
+      color: var(--neutral-700);
+      max-height: 220px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      font-family: monospace;
+      margin-bottom: 12px;
+    }
+    .note-modal-edit-btn {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--teal-600);
+      background: var(--teal-50);
+      border: 1.5px solid var(--teal-200);
+      border-radius: var(--radius-sm);
+      padding: 10px;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .note-modal-edit-btn svg { width: 13px; height: 13px; }
+    .note-modal-edit-btn:hover { background: var(--teal-100); border-color: var(--teal-300); }
+    .note-confirm-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 10px;
+      padding: 10px 12px;
+      background: var(--neutral-50);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+    }
+    .note-confirm-msg { flex: 1; font-size: 12px; font-weight: 500; color: var(--neutral-600); }
+    .note-confirm-yes {
+      font-size: 12px; font-weight: 700;
+      color: white;
+      background: var(--teal-500);
+      border: none;
+      border-radius: var(--radius-full);
+      padding: 5px 14px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .note-confirm-yes:hover { background: var(--teal-600); }
+    .note-confirm-no {
+      font-size: 12px; font-weight: 600;
+      color: var(--neutral-500);
+      background: none;
+      border: 1px solid var(--neutral-300);
+      border-radius: var(--radius-full);
+      padding: 5px 12px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .note-confirm-no:hover { background: var(--neutral-100); }
+    .note-reset-btn {
+      width: 100%;
+      margin-top: 12px;
+      padding: 9px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--neutral-400);
+      background: none;
+      border: 1px solid var(--neutral-200);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .note-reset-btn svg { width: 13px; height: 13px; }
+    .note-reset-btn:hover { background: var(--coral-50); color: var(--coral-600); border-color: var(--coral-200); }
+
+    /* =====================
+       ADMIN MODAL
+    ===================== */
+    .admin-tabs {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+    .admin-tab {
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 700;
+      border-radius: var(--radius-full);
+      border: 1.5px solid var(--color-border);
+      color: var(--neutral-500);
+      background: var(--color-surface);
+      transition: all 0.15s;
+      cursor: pointer;
+    }
+    .admin-tab.active {
+      background: var(--teal-50);
+      border-color: var(--teal-500);
+      color: var(--teal-700);
+    }
+    .admin-prompt-area {
+      width: 100%;
+      min-height: 320px;
+      border: 1.5px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      font-size: 13px;
+      line-height: 1.6;
+      font-family: monospace;
+      color: var(--neutral-800);
+      background: var(--neutral-50);
+      resize: vertical;
+      transition: border-color 0.15s;
+      outline: none;
+    }
+    .admin-prompt-area:focus { border-color: var(--teal-500); background: white; }
+    .admin-hint {
+      font-size: 12px;
+      color: var(--neutral-400);
+      margin-top: 6px;
+      line-height: 1.5;
+    }
+    .admin-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 14px;
+    }
 
     /* =====================
        MODALS
@@ -909,45 +1269,6 @@
     }
     .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
 
-    /* Note card */
-    .note-card {
-      background: var(--color-surface);
-      border-radius: var(--radius-xl);
-      padding: 18px 20px;
-      border: 1.5px solid var(--color-border-subtle);
-      box-shadow: var(--shadow-sm);
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      max-width: 680px;
-      margin: 0 auto 0;
-      width: calc(100% - 48px);
-    }
-    .note-card-icon {
-      width: 40px; height: 40px;
-      border-radius: var(--radius-md);
-      background: var(--teal-50);
-      color: var(--teal-600);
-      display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0;
-    }
-    .note-card-icon svg { width: 20px; height: 20px; }
-    .note-card-body { flex: 1; min-width: 0; }
-    .note-card-label { font-size: 13px; font-weight: 700; color: var(--neutral-800); }
-    .note-card-sub { font-size: 12px; color: var(--neutral-400); margin-top: 2px; }
-    .note-card-btn {
-      font-size: 13px; font-weight: 600;
-      color: var(--teal-600);
-      padding: 7px 14px;
-      border-radius: var(--radius-full);
-      border: 1.5px solid var(--teal-200);
-      background: var(--teal-50);
-      white-space: nowrap;
-      transition: all 0.15s;
-      flex-shrink: 0;
-    }
-    .note-card-btn:hover { background: var(--teal-100); border-color: var(--teal-300); }
-
     /* Note modal textarea */
     .note-textarea {
       width: 100%;
@@ -1043,8 +1364,18 @@
         Health<span>Coach</span>
       </div>
       <div class="top-bar-actions">
+        <button class="note-chip" id="landing-note-chip" onclick="openNoteModal()">
+          <svg class="note-chip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="12" y1="17" x2="8" y2="17"/></svg>
+          <div class="note-chip-text">
+            <div class="note-chip-status" id="landing-note-status">Demo Note</div>
+            <div class="note-chip-cta">Click to preview / edit</div>
+          </div>
+        </button>
         <button class="icon-btn" onclick="openDrawer()" title="Chat history">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <button class="icon-btn" onclick="openAdminLogin()" title="Admin">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
         </button>
         <button class="avatar-btn" id="landing-avatar" onclick="openProfile()" title="Profile & settings">
           HC
@@ -1061,7 +1392,7 @@
 
     <!-- Action Cards -->
     <div class="action-cards">
-      <button class="action-card review" onclick="startChat('review')">
+      <button class="action-card review" onclick="showPrivacyDisclaimer('review')">
         <div class="action-card-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
         </div>
@@ -1071,7 +1402,7 @@
         </div>
       </button>
 
-      <button class="action-card prepare" onclick="startChat('prepare')">
+      <button class="action-card prepare" onclick="showPrivacyDisclaimer('prepare')">
         <div class="action-card-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
         </div>
@@ -1080,18 +1411,6 @@
           <div class="action-card-desc">Tell your care team what matters most to you before your appointment.</div>
         </div>
       </button>
-    </div>
-
-    <!-- Note Card -->
-    <div class="note-card" id="note-card" style="margin-bottom:24px">
-      <div class="note-card-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-      </div>
-      <div class="note-card-body">
-        <div class="note-card-label" id="note-card-label">Demo Note Active</div>
-        <div class="note-card-sub" id="note-card-sub">Last visit: Feb 14, 2025</div>
-      </div>
-      <button class="note-card-btn" onclick="openNoteModal()">Paste Your Own</button>
     </div>
 
     <!-- Recent Conversations -->
@@ -1114,6 +1433,13 @@
         <div class="chat-title" id="chat-title">Last Visit Review</div>
       </div>
       <div class="chat-header-actions">
+        <button class="chat-note-btn" id="chat-note-btn" onclick="openNoteModal()" title="View or replace visit note">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Visit Note
+        </button>
+        <button class="icon-btn" onclick="openShareModal()" title="Share or delete">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+        </button>
         <button class="icon-btn" onclick="startNewChat()" title="New chat">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         </button>
@@ -1287,23 +1613,66 @@
     </div>
   </div>
 
-  <!-- Note Upload Modal -->
+  <!-- Note Modal -->
   <div class="modal-overlay" id="modal-note" onclick="closeModalOnOverlay(event,'modal-note')">
     <div class="modal">
       <div class="modal-drag"></div>
-      <div class="modal-header">
-        <div class="modal-title">Your Visit Note</div>
-        <button class="modal-close" onclick="closeModal('modal-note')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+
+      <!-- VIEW MODE -->
+      <div id="note-view-mode">
+        <div class="modal-header">
+          <div class="modal-title">Visit Note</div>
+          <button class="modal-close" onclick="closeModal('modal-note')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+        <div class="note-modal-badge" id="note-modal-badge">
+          <div class="note-modal-badge-dot"></div>
+          <span id="note-modal-badge-label">Demo Note</span>
+        </div>
+        <div class="note-modal-preview" id="note-modal-preview-content"></div>
+        <button class="note-modal-edit-btn" onclick="enterNoteReplaceMode()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Replace with your own note
+        </button>
+        <button class="note-reset-btn" id="note-reset-btn-view" onclick="useDefaultNote()" style="display:none">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
+          Reset to Demo Note
         </button>
       </div>
-      <p style="font-size:14px;color:var(--neutral-500);margin-bottom:16px;line-height:1.6">Paste your SOAP note or any clinic visit notes below. HealthCoach will use these to personalize your experience.</p>
-      <textarea class="note-textarea" id="note-textarea" placeholder="Paste your visit notes here…" maxlength="10000" oninput="updateNoteCharCount()"></textarea>
-      <div class="note-char-count"><span id="note-char-count">0</span> / 10,000</div>
-      <div class="note-modal-actions">
-        <button class="btn-primary" style="flex:2;margin-top:0" onclick="submitNote()">Save Note</button>
-        <button class="btn-outline" style="flex:1;margin-top:0" onclick="useDefaultNote()">Use Demo Note</button>
+
+      <!-- REPLACE MODE -->
+      <div id="note-replace-mode" style="display:none">
+        <div class="modal-header">
+          <div class="modal-title">Replace Note</div>
+          <button class="modal-close" onclick="closeModal('modal-note')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+        <p style="font-size:13px;color:var(--neutral-500);margin-bottom:12px;line-height:1.55">Paste your SOAP note below — it will replace what HealthCoach uses for this session.</p>
+        <textarea class="note-textarea" id="note-textarea" placeholder="Paste your visit notes here…" maxlength="10000" oninput="updateNoteCharCount()"></textarea>
+        <div class="note-char-count"><span id="note-char-count">0</span> / 10,000</div>
+        <div class="note-modal-actions">
+          <button class="btn-primary" style="flex:2;margin-top:0" onclick="confirmNoteSave()">Save Note</button>
+          <button class="btn-outline" style="flex:1;margin-top:0" onclick="exitNoteReplaceMode()">Back</button>
+        </div>
       </div>
+
+      <!-- CONFIRM MODE -->
+      <div id="note-confirm-mode" style="display:none">
+        <div class="modal-header">
+          <div class="modal-title">Replace Note</div>
+          <button class="modal-close" onclick="closeModal('modal-note')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+        <div class="note-confirm-row">
+          <span class="note-confirm-msg">This will replace your current visit note. Are you sure?</span>
+          <button class="note-confirm-no" onclick="cancelConfirm()">Go back</button>
+          <button class="note-confirm-yes" onclick="submitNote()">Confirm</button>
+        </div>
+      </div>
+
     </div>
   </div>
 
@@ -1318,6 +1687,136 @@
       </div>
       <div class="drawer-body" id="drawer-body">
         <!-- populated by JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Privacy Disclaimer Modal -->
+  <div class="modal-overlay" id="modal-privacy">
+    <div class="modal" style="max-width:460px">
+      <div class="modal-drag"></div>
+      <div class="modal-header">
+        <div class="modal-title">Before you begin</div>
+      </div>
+      <p style="font-size:14px;color:var(--neutral-600);line-height:1.7">HealthCoach is a <strong>support tool</strong> to help you understand your visit and prepare for the next one. Please read before continuing.</p>
+      <div class="privacy-points">
+        <div class="privacy-point">
+          <div class="privacy-point-icon green">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </div>
+          <div><strong>Your conversation is private.</strong> It is saved only to your account and is not shared with your doctor, insurer, or anyone else unless you choose to share it.</div>
+        </div>
+        <div class="privacy-point">
+          <div class="privacy-point-icon blue">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+          </div>
+          <div><strong>You are in control.</strong> You can delete your conversation at any time from the chat screen or your history.</div>
+        </div>
+        <div class="privacy-point">
+          <div class="privacy-point-icon amber">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          </div>
+          <div><strong>This is not medical advice.</strong> Always follow your healthcare provider's guidance. HealthCoach helps you communicate — it does not replace your care team.</div>
+        </div>
+        <div class="privacy-point">
+          <div class="privacy-point-icon coral">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+          </div>
+          <div><strong>You can share on your terms.</strong> Use the share option in the chat to send a summary to your provider or anyone else you choose.</div>
+        </div>
+      </div>
+      <button class="btn-primary" onclick="acceptPrivacyAndStart()">I understand — let's begin</button>
+      <button class="btn-outline" style="width:100%;margin-top:10px" onclick="closeModal('modal-privacy')">Not right now</button>
+      <p class="privacy-disclaimer-footer">By continuing you acknowledge this tool is for informational support only.</p>
+    </div>
+  </div>
+
+  <!-- Share Modal -->
+  <div class="modal-overlay" id="modal-share" onclick="closeModalOnOverlay(event,'modal-share')">
+    <div class="modal" style="max-width:400px">
+      <div class="modal-drag"></div>
+      <div class="modal-header">
+        <div class="modal-title">Share or Manage</div>
+        <button class="modal-close" onclick="closeModal('modal-share')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <button class="share-option" onclick="shareWithProvider()">
+        <div class="share-option-icon teal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        </div>
+        <div class="share-option-body">
+          <div class="share-option-title">Share with my provider</div>
+          <div class="share-option-desc">Generate a summary and download it to bring to your appointment</div>
+        </div>
+      </button>
+      <button class="share-option" onclick="copyConversation()">
+        <div class="share-option-icon blue">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        </div>
+        <div class="share-option-body">
+          <div class="share-option-title">Copy conversation</div>
+          <div class="share-option-desc">Copy the full conversation text to your clipboard</div>
+        </div>
+      </button>
+      <hr class="share-delete-divider">
+      <button class="share-option danger" onclick="confirmDeleteCurrentSession()">
+        <div class="share-option-icon coral">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+        </div>
+        <div class="share-option-body">
+          <div class="share-option-title">Delete this conversation</div>
+          <div class="share-option-desc">Permanently remove this chat from your account</div>
+        </div>
+      </button>
+    </div>
+  </div>
+
+  <!-- Admin Login Modal -->
+  <div class="modal-overlay" id="modal-admin-login" onclick="closeModalOnOverlay(event,'modal-admin-login')">
+    <div class="modal" style="max-width:360px">
+      <div class="modal-drag"></div>
+      <div class="modal-header">
+        <div class="modal-title">Admin Access</div>
+        <button class="modal-close" onclick="closeModal('modal-admin-login')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="form-group" style="margin-bottom:14px">
+        <label class="form-label">Password</label>
+        <input class="form-input" id="admin-password-input" type="password" placeholder="Enter admin password"
+          onkeydown="if(event.key==='Enter')checkAdminPassword()" />
+      </div>
+      <div id="admin-login-error" class="auth-error" style="margin-bottom:12px"></div>
+      <button class="btn-primary" onclick="checkAdminPassword()">Enter →</button>
+    </div>
+  </div>
+
+  <!-- Admin Prompt Editor Modal -->
+  <div class="modal-overlay" id="modal-admin" onclick="closeModalOnOverlay(event,'modal-admin')">
+    <div class="modal" style="max-width:700px">
+      <div class="modal-drag"></div>
+      <div class="modal-header">
+        <div class="modal-title">Prompt Editor</div>
+        <button class="modal-close" onclick="closeModal('modal-admin')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="admin-tabs">
+        <button class="admin-tab active" data-key="review_guided"    onclick="switchAdminTab('review_guided')">Review — Guided</button>
+        <button class="admin-tab"        data-key="review_specific"  onclick="switchAdminTab('review_specific')">Review — Specific</button>
+        <button class="admin-tab"        data-key="prepare_guided"   onclick="switchAdminTab('prepare_guided')">Prepare — Guided</button>
+        <button class="admin-tab"        data-key="prepare_specific" onclick="switchAdminTab('prepare_specific')">Prepare — Specific</button>
+        <button class="admin-tab"        data-key="summary_review"   onclick="switchAdminTab('summary_review')">Summary — Review</button>
+        <button class="admin-tab"        data-key="summary_prepare"  onclick="switchAdminTab('summary_prepare')">Summary — Prepare</button>
+      </div>
+      <textarea class="admin-prompt-area" id="admin-prompt-textarea" spellcheck="false"></textarea>
+      <div class="admin-hint" id="admin-hint-text">
+        Available placeholders: <code>{literacy}</code> · <code>{language}</code> · <code>{record}</code> (review chat prompts only) — filled in automatically at runtime.
+      </div>
+      <div class="admin-actions">
+        <button class="btn-primary" style="flex:2;margin-top:0" onclick="saveAdminPrompt()">Save Changes</button>
+        <button class="btn-outline" style="flex:1;margin-top:0" onclick="resetAdminPrompt()">Reset to Default</button>
       </div>
     </div>
   </div>
@@ -1344,6 +1843,7 @@
       patientRecord: null,         // SOAP note object from API
       patientRecordIsDefault: true,
       currentSessionId: null,      // UUID for the active chat session
+      lastSummary: null,           // most recent LLM-generated summary text
     };
 
     /* ============================================================
@@ -1514,9 +2014,9 @@
             <div class="recent-item-title">${s.mode === 'review' ? 'Last Visit Review' : 'Next Visit Prep'}</div>
             <div class="recent-item-date">${s.date} · ${s.messages.length} messages</div>
           </div>
-          <div class="recent-item-arrow">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-          </div>
+          <button class="session-delete-btn" title="Delete" onclick="event.stopPropagation();deleteSession('${s.id}')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
+          </button>
         </div>
       `).join('');
     }
@@ -1527,6 +2027,13 @@
     const SOAP_SECTIONS = ['Subjective', 'Objective', 'Assessment', 'Plan'];
     const PREP_SECTIONS = ['What Matters', '6-Month Health', 'Getting It Right', 'Wrap-Up'];
 
+    /* ---- Chat Note Button (review mode only) ---- */
+    function initNoteContextPanel(mode) {
+      const btn = document.getElementById('chat-note-btn');
+      if (btn) btn.style.display = mode === 'review' ? 'inline-flex' : 'none';
+    }
+    /* ---- End Note Status Bar ---- */
+
     function startChat(mode) {
       state.chatMode = mode;
       state.chatPath = null;
@@ -1534,6 +2041,7 @@
       state.soapSection = 0;
       state.prepSection = 0;
       state.currentSessionId = null;
+      state.lastSummary = null;
 
       const modeLabel = document.getElementById('chat-mode-label');
       const titleEl   = document.getElementById('chat-title');
@@ -1558,7 +2066,11 @@
 
       document.getElementById('chat-body').innerHTML = '';
       setProgress(0);
+      document.getElementById('screen-chat').classList.toggle('mode-prepare', mode === 'prepare');
       showScreen('chat');
+
+      // Show/hide note context panel (review mode only)
+      initNoteContextPanel(mode);
 
       // Step 1: "Are you ready to begin?" — no API call
       setTimeout(() => {
@@ -1623,10 +2135,9 @@
       if (chips && chips.length) {
         const chipRow = document.createElement('div');
         chipRow.className = 'choice-chips';
-        chipRow.innerHTML = chips.map((c, i) => {
-          const escaped = c.replace(/'/g, '&#39;');
-          return `<button class="chip" style="animation-delay:${i*0.08}s" onclick="selectChip('${escaped}',this.parentElement)">${c}</button>`;
-        }).join('');
+        chipRow.innerHTML = chips.map((c, i) =>
+          `<button class="chip" data-chip="${c.replace(/"/g,'&quot;')}" style="animation-delay:${i*0.08}s" onclick="selectChip(this.dataset.chip,this.parentElement)">${c}</button>`
+        ).join('');
         body.appendChild(chipRow);
       }
 
@@ -1793,6 +2304,7 @@
       state.chatPath = 'guided';
       state.messages = s.messages.map(m => ({ role: m.role, content: m.content }));
       state.currentSessionId = s.id;
+      document.getElementById('screen-chat').classList.toggle('mode-prepare', s.mode === 'prepare');
 
       const modeLabel = document.getElementById('chat-mode-label');
       const titleEl   = document.getElementById('chat-title');
@@ -1823,57 +2335,54 @@
     /* ============================================================
        SUMMARY
     ============================================================ */
-    function openSummary() {
+    async function openSummary() {
       const content = document.getElementById('summary-content');
-      const name = state.profile.name || state.user?.displayName || 'Patient';
+      const modeLabel = state.chatMode === 'review' ? 'Visit Review' : 'Appointment Prep';
 
-      if (state.chatMode === 'review') {
-        content.innerHTML = `
-          <div style="font-size:13px;color:var(--neutral-500);margin-bottom:20px;">
-            Generated ${new Date().toLocaleString()} · Review Mode
+      // Show modal immediately with a loading state
+      content.innerHTML = `
+        <div style="display:flex;flex-direction:column;align-items:center;gap:14px;padding:32px 16px;color:var(--neutral-500);">
+          <div class="typing-indicator" style="display:inline-flex;">
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
           </div>
-          <div class="summary-section">
-            <div class="summary-section-title">Subjective</div>
-            <div class="summary-item">Chief complaint: Chest discomfort (burning, after meals, 3 weeks)</div>
-            <div class="summary-item">Worse lying down; improved with antacids</div>
-          </div>
-          <div class="summary-section">
-            <div class="summary-section-title">Objective</div>
-            <div class="summary-item">BP 142/88 mmHg · Weight 185 lbs</div>
-            <div class="summary-item">EKG normal · Lipid panel ordered</div>
-          </div>
-          <div class="summary-section">
-            <div class="summary-section-title">Assessment</div>
-            <div class="summary-item">GERD (primary), Hyperlipidemia, Borderline Hypertension</div>
-          </div>
-          <div class="summary-section">
-            <div class="summary-section-title">Plan</div>
-            <div class="summary-item">Omeprazole 20mg daily · Dietary changes · Follow-up in 4 weeks</div>
-          </div>
-        `;
-      } else {
-        content.innerHTML = `
-          <div style="font-size:13px;color:var(--neutral-500);margin-bottom:20px;">
-            Generated ${new Date().toLocaleString()} · OurDX Mode
-          </div>
-          <div class="summary-section">
-            <div class="summary-section-title">Patient's Main Concern</div>
-            <div class="summary-item">To be completed after conversation</div>
-          </div>
-          <div class="summary-section">
-            <div class="summary-section-title">Recent Health Changes</div>
-            <div class="summary-item">Noted during preparation session</div>
-          </div>
-          <div class="summary-section">
-            <div class="summary-section-title">Prior Visit Experience</div>
-            <div class="summary-item">Patient feedback captured</div>
-          </div>
-          <div style="background:var(--teal-50);border-radius:var(--radius-md);padding:14px 16px;margin-top:16px;font-size:14px;color:var(--teal-700);">
-            ✅ <strong>${name}</strong> completed the HealthCoach preparation survey.
-          </div>
-        `;
-      }
+          <div style="font-size:14px;">Generating your summary…</div>
+        </div>
+      `;
       openModal('modal-summary');
+
+      const history = state.messages.map(m => ({ role: m.role, content: m.content }));
+
+      try {
+        const res = await fetch('/api/summary', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ history, mode: state.chatMode }),
+        });
+        const data = await res.json();
+
+        if (!res.ok || !data.summary) {
+          content.innerHTML = `<p style="color:var(--coral-500);padding:16px;">${data.error || 'Could not generate summary. Please try again.'}</p>`;
+          return;
+        }
+
+        state.lastSummary = data.summary;
+
+        content.innerHTML = `
+          <div style="font-size:12px;color:var(--neutral-400);margin-bottom:20px;">
+            Generated ${new Date().toLocaleString()} · ${modeLabel}
+          </div>
+          <div style="font-size:15px;line-height:1.7;color:var(--color-text);">
+            ${formatMessage(data.summary)}
+          </div>
+          <div style="background:var(--teal-50);border-radius:var(--radius-md);padding:12px 16px;margin-top:20px;font-size:13px;color:var(--teal-700);line-height:1.5;">
+            💡 Bring this summary to your next appointment to help your doctor understand what matters most to you.
+          </div>
+        `;
+      } catch (_) {
+        content.innerHTML = `<p style="color:var(--coral-500);padding:16px;">Unable to reach the server. Please try again.</p>`;
+      }
     }
 
     function emailSummary() {
@@ -1883,14 +2392,15 @@
     }
 
     function downloadSummary(format) {
-      const name = state.profile.name || 'patient';
       const ts = new Date().toISOString().slice(0,10);
+      const modeLabel = state.chatMode === 'review' ? 'Visit Review' : 'Appointment Prep';
       if (format === 'txt') {
-        const content = 'HealthCoach Summary\n' + '='.repeat(40) + '\nGenerated: ' + new Date().toLocaleString() + '\n\nSee app for full content.';
+        const summaryText = state.lastSummary || '(No summary generated yet — click Generate Summary first.)';
+        const content = `HealthCoach Summary\n${'='.repeat(40)}\nGenerated: ${new Date().toLocaleString()}\nMode: ${modeLabel}\n\n${summaryText}`;
         downloadFile(`healthcoach-summary-${ts}.txt`, content, 'text/plain');
       } else {
-        const data = { generated: new Date().toISOString(), mode: state.chatMode, messages: state.messages };
-        downloadFile(`healthcoach-transcript-${ts}.json`, JSON.stringify(data, null, 2), 'application/json');
+        const data = { generated: new Date().toISOString(), mode: state.chatMode, summary: state.lastSummary || null, messages: state.messages };
+        downloadFile(`healthcoach-summary-${ts}.json`, JSON.stringify(data, null, 2), 'application/json');
       }
       showToast('Downloaded!');
     }
@@ -1947,10 +2457,127 @@
     /* ============================================================
        NOTE / RECORD
     ============================================================ */
+    /* ============================================================
+       PRIVACY + SHARE + DELETE
+    ============================================================ */
+    let _pendingChatMode = null;
+
+    function showPrivacyDisclaimer(mode) {
+      _pendingChatMode = mode;
+      openModal('modal-privacy');
+    }
+
+    function acceptPrivacyAndStart() {
+      closeModal('modal-privacy');
+      if (_pendingChatMode) startChat(_pendingChatMode);
+      _pendingChatMode = null;
+    }
+
+    function openShareModal() {
+      openModal('modal-share');
+    }
+
+    async function shareWithProvider() {
+      closeModal('modal-share');
+      await openSummary();
+    }
+
+    function copyConversation() {
+      const text = state.messages
+        .map(m => `${m.role === 'user' ? 'You' : 'HealthCoach'}: ${m.content}`)
+        .join('\n\n');
+      navigator.clipboard.writeText(text).then(() => {
+        showToast('Conversation copied to clipboard ✓');
+      }).catch(() => {
+        showToast('Could not copy — try downloading instead.');
+      });
+      closeModal('modal-share');
+    }
+
+    function confirmDeleteCurrentSession() {
+      closeModal('modal-share');
+      if (!confirm('Delete this conversation? This cannot be undone.')) return;
+      deleteCurrentSession();
+    }
+
+    async function deleteCurrentSession() {
+      const id = state.currentSessionId;
+      if (id) await _deleteSessionById(id);
+      state.messages = [];
+      state.currentSessionId = null;
+      state.lastSummary = null;
+      await goBack();
+    }
+
+    async function deleteSession(id) {
+      if (!confirm('Delete this conversation? This cannot be undone.')) return;
+      await _deleteSessionById(id);
+      state.sessions = state.sessions.filter(s => s.id !== id);
+      await renderRecentList();
+      renderDrawer();
+      showToast('Conversation deleted');
+    }
+
+    async function _deleteSessionById(id) {
+      try {
+        await fetch(`/api/sessions/${id}`, { method: 'DELETE' });
+      } catch (_) {}
+    }
+
     function openNoteModal() {
+      // Update badge
+      const badge = document.getElementById('note-modal-badge');
+      const badgeLabel = document.getElementById('note-modal-badge-label');
+      if (state.patientRecordIsDefault) {
+        badge.classList.remove('custom-active');
+        badgeLabel.textContent = 'Demo Note';
+      } else {
+        badge.classList.add('custom-active');
+        badgeLabel.textContent = 'Your Note';
+      }
+      // Populate preview
+      const preview = document.getElementById('note-modal-preview-content');
+      if (state.patientRecord) {
+        const rec = state.patientRecord;
+        preview.textContent = typeof rec === 'string' ? rec
+          : (rec.text || JSON.stringify(rec, null, 2));
+      } else {
+        preview.textContent = '(No note loaded)';
+      }
+      // Show reset only when custom note is active
+      document.getElementById('note-reset-btn-view').style.display =
+        state.patientRecordIsDefault ? 'none' : 'flex';
+      // Reset to view mode
+      document.getElementById('note-view-mode').style.display = 'block';
+      document.getElementById('note-replace-mode').style.display = 'none';
+      document.getElementById('note-confirm-mode').style.display = 'none';
+      openModal('modal-note');
+    }
+
+    function enterNoteReplaceMode() {
       document.getElementById('note-textarea').value = '';
       document.getElementById('note-char-count').textContent = '0';
-      openModal('modal-note');
+      document.getElementById('note-view-mode').style.display = 'none';
+      document.getElementById('note-replace-mode').style.display = 'block';
+      document.getElementById('note-confirm-mode').style.display = 'none';
+    }
+
+    function exitNoteReplaceMode() {
+      document.getElementById('note-view-mode').style.display = 'block';
+      document.getElementById('note-replace-mode').style.display = 'none';
+    }
+
+    function confirmNoteSave() {
+      if (!document.getElementById('note-textarea').value.trim()) {
+        showToast('Please paste a note first.'); return;
+      }
+      document.getElementById('note-replace-mode').style.display = 'none';
+      document.getElementById('note-confirm-mode').style.display = 'block';
+    }
+
+    function cancelConfirm() {
+      document.getElementById('note-replace-mode').style.display = 'block';
+      document.getElementById('note-confirm-mode').style.display = 'none';
     }
 
     function updateNoteCharCount() {
@@ -1979,6 +2606,7 @@
     }
 
     async function useDefaultNote() {
+      if (!confirm('Reset to the demo note? Your custom note will be removed.')) return;
       try {
         const res = await fetch('/api/record');
         if (res.ok) {
@@ -1993,15 +2621,126 @@
     }
 
     function updateNoteCard() {
-      const label = document.getElementById('note-card-label');
-      const sub = document.getElementById('note-card-sub');
+      const chip = document.getElementById('landing-note-chip');
+      const label = document.getElementById('landing-note-status');
+      if (!chip) return;
       if (state.patientRecordIsDefault) {
-        label.textContent = 'Demo Note Active';
-        const visitDate = state.patientRecord?.visitDate;
-        sub.textContent = visitDate ? `Last visit: ${visitDate}` : 'Using built-in demo SOAP note';
+        chip.classList.remove('custom-active');
+        label.textContent = 'Demo Note';
       } else {
-        label.textContent = 'Custom Note Active';
-        sub.textContent = 'Using your pasted visit notes';
+        chip.classList.add('custom-active');
+        label.textContent = 'Your Note';
+      }
+    }
+
+    /* ============================================================
+       ADMIN
+    ============================================================ */
+    const _adminPromptDefaults = {};
+    let _adminCurrentKey = 'review_guided';
+    let _adminPassword = '';
+    let _adminPrompts = {};
+
+    function openAdminLogin() {
+      document.getElementById('admin-password-input').value = '';
+      document.getElementById('admin-login-error').textContent = '';
+      document.getElementById('admin-login-error').classList.remove('visible');
+      openModal('modal-admin-login');
+      setTimeout(() => document.getElementById('admin-password-input').focus(), 100);
+    }
+
+    async function checkAdminPassword() {
+      const pw = document.getElementById('admin-password-input').value;
+      const errEl = document.getElementById('admin-login-error');
+      errEl.classList.remove('visible');
+      try {
+        const res = await fetch('/api/admin/prompts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password: pw }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          errEl.textContent = data.error || 'Wrong password.';
+          errEl.classList.add('visible');
+          return;
+        }
+        _adminPassword = pw;
+        _adminPrompts = data.prompts;
+        closeModal('modal-admin-login');
+        openAdminEditor();
+      } catch (_) {
+        errEl.textContent = 'Could not connect to server.';
+        errEl.classList.add('visible');
+      }
+    }
+
+    function openAdminEditor() {
+      _adminCurrentKey = 'review_guided';
+      document.querySelectorAll('.admin-tab').forEach(t => {
+        t.classList.toggle('active', t.dataset.key === _adminCurrentKey);
+      });
+      document.getElementById('admin-prompt-textarea').value = _adminPrompts[_adminCurrentKey] || '';
+      openModal('modal-admin');
+    }
+
+    function switchAdminTab(key) {
+      _adminPrompts[_adminCurrentKey] = document.getElementById('admin-prompt-textarea').value;
+      _adminCurrentKey = key;
+      document.querySelectorAll('.admin-tab').forEach(t => {
+        t.classList.toggle('active', t.dataset.key === key);
+      });
+      document.getElementById('admin-prompt-textarea').value = _adminPrompts[key] || '';
+      const hints = {
+        review_guided:    'Placeholders: <code>{literacy}</code> · <code>{language}</code> · <code>{record}</code>',
+        review_specific:  'Placeholders: <code>{literacy}</code> · <code>{language}</code> · <code>{record}</code>',
+        prepare_guided:   'Placeholders: <code>{literacy}</code> · <code>{language}</code>',
+        prepare_specific: 'Placeholders: <code>{literacy}</code> · <code>{language}</code>',
+        summary_review:   'Placeholders: <code>{literacy}</code> · <code>{language}</code> — conversation transcript is appended automatically',
+        summary_prepare:  'Placeholders: <code>{literacy}</code> · <code>{language}</code> — conversation transcript is appended automatically',
+      };
+      document.getElementById('admin-hint-text').innerHTML = hints[key] || '';
+    }
+
+    async function saveAdminPrompt() {
+      _adminPrompts[_adminCurrentKey] = document.getElementById('admin-prompt-textarea').value;
+      try {
+        const res = await fetch('/api/admin/prompts', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password: _adminPassword, prompts: _adminPrompts }),
+        });
+        const data = await res.json();
+        if (!res.ok) { showToast(data.error || 'Save failed.'); return; }
+        showToast('Prompts saved ✓');
+      } catch (_) {
+        showToast('Could not save — check connection.');
+      }
+    }
+
+    async function resetAdminPrompt() {
+      if (!confirm(`Reset "${_adminCurrentKey.replace('_', ' ')}" to the built-in default? This cannot be undone.`)) return;
+      // Send empty string for this key to signal "reset to default"
+      _adminPrompts[_adminCurrentKey] = '';
+      try {
+        const res = await fetch('/api/admin/prompts', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password: _adminPassword, prompts: { [_adminCurrentKey]: '' } }),
+        });
+        if (!res.ok) { showToast('Reset failed.'); return; }
+        // Reload prompts to get the real default back
+        const r2 = await fetch('/api/admin/prompts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password: _adminPassword }),
+        });
+        const data = await r2.json();
+        _adminPrompts = data.prompts;
+        document.getElementById('admin-prompt-textarea').value = _adminPrompts[_adminCurrentKey] || '';
+        showToast('Reset to default ✓');
+      } catch (_) {
+        showToast('Could not reset — check connection.');
       }
     }
 
@@ -2041,6 +2780,9 @@
         <div class="drawer-item" onclick="loadSession('${s.id}');closeDrawer()">
           <div class="drawer-item-title">${s.mode === 'review' ? 'Last Visit Review' : 'Next Visit Prep'}</div>
           <div class="drawer-item-meta">${s.date} · ${s.messages.length} messages</div>
+          <button class="session-delete-btn" title="Delete" onclick="event.stopPropagation();deleteSession('${s.id}')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
+          </button>
         </div>
       `).join('');
     }
@@ -2078,7 +2820,7 @@
         .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
         .replace(/\*(.+?)\*/g, '<em>$1</em>')
         .replace(/\n/g, '<br>')
-        .replace(/•\s/g, '<span style="display:inline-block;width:1.2em;color:var(--teal-500)">•</span> ');
+        .replace(/•\s/g, '<span class="chat-bullet" style="display:inline-block;width:1.2em;color:var(--teal-500)">•</span> ');
     }
 
     function escapeHtml(str) {
