@@ -1,4 +1,3 @@
-# Start of Selection
 # app/services/chat_flow.py
 """Combines prompts with runtime context, calls LLM, extracts/cleans markers. All instructions live in prompts.py."""
 from typing import List, Dict, Optional
@@ -16,6 +15,11 @@ from app.prompts import (
 # Tokens per mode — generous enough for a question + markers + brief context
 MAX_TOKENS_OURDX = 400
 MAX_TOKENS_REVIEW = 400
+
+# Pre-compiled regexes for _clean (avoids recompile on every call)
+_RE_SEC = re.compile(r"\[S([1-4])\]", re.I)
+_RE_SOAP = re.compile(r"\[SOAP:(subjective|objective|assessment|plan)\]", re.I)
+_RE_MARKER = re.compile(r"\[(?:S[1-4]|binary|mc|free|SOAP:(?:subjective|objective|assessment|plan))\]", re.I)
 
 def get_next_reply(
     llama: ChatClient,
@@ -70,69 +74,33 @@ def get_next_reply(
 
 
 def _clean(text: str, use_mode: str) -> str:
-    raw = text or ""
+    raw = (text or "").strip()
+    if not raw:
+        return "[SOAP:subjective]" if use_mode == "review" else ""
 
-    # --- Extract hidden markers before processing ---
+    # Extract markers (pre-compiled regex)
     sec_tag = None
     soap_tag = None
-
     if use_mode != "review":
-        sec_matches = re.findall(r"\[S([1-4])\]", raw, flags=re.I | re.M)
-        sec_tag = f"[S{sec_matches[-1]}]" if sec_matches else None
+        m = _RE_SEC.findall(raw)
+        sec_tag = f"[S{m[-1]}]" if m else None
     else:
-        soap_matches = re.findall(r"\[SOAP:(subjective|objective|assessment|plan)\]", raw, flags=re.I | re.M)
-        soap_tag = f"[SOAP:{soap_matches[-1].lower()}]" if soap_matches else None
+        m = _RE_SOAP.findall(raw)
+        soap_tag = f"[SOAP:{m[-1].lower()}]" if m else None
 
-    # Strip all markers from visible text for clean processing (including legacy [binary]/[mc]/[free] if model sends them)
-    marker_pattern = r"\[(?:S[1-4]|binary|mc|free|SOAP:(?:subjective|objective|assessment|plan))\]"
-    stripped = re.sub(marker_pattern, "", raw, flags=re.I).strip()
-
-    # Split into lines, drop blank lines
+    # Strip markers, collapse blank lines
+    stripped = _RE_MARKER.sub("", raw).strip()
     lines = [ln.strip() for ln in stripped.splitlines() if ln.strip()]
+    out = "\n".join(lines).strip()
 
-    # Detect bullet/numbered lists
-    list_re = re.compile(r"^\s*(?:[-•]|\d+[)\.\-])\s+")
-    has_list = any(list_re.match(ln) for ln in lines)
-
-    if has_list:
-        # Keep the question line and up to 6 list items
-        question_lines = [ln for ln in lines if not list_re.match(ln)]
-        item_lines = [ln for ln in lines if list_re.match(ln)][:6]
-        out_core = "\n".join((question_lines[:1] if question_lines else []) + item_lines).strip()
-    else:
-        # Rejoin, then take up to 3 sentences or 320 characters
-        full = " ".join(lines).strip()
-        sentences = re.split(r"(?<=[.?!])\s+", full)
-        short: List[str] = []
-        total = 0
-        for s in sentences:
-            if not s:
-                continue
-            if total + len(s) > 320 and short:
-                break
-            short.append(s)
-            total += len(s)
-            if len(short) >= 3:
-                break
-        out_core = " ".join(short).strip()
-
-        # If we trimmed a question mark off, recover first complete question
-        if "?" in full and not out_core.endswith("?"):
-            m = re.search(r"([^?]+\?)", full)
-            if m:
-                out_core = m.group(1).strip()
-
-    # --- Re-attach markers ---
-    out = out_core
+    # Re-attach marker
     if use_mode != "review":
-        if sec_tag and not re.search(r"\[S[1-4]\]", out, flags=re.I):
+        if sec_tag and "[S" not in out.upper():
             out = f"{out}\n{sec_tag}"
     else:
-        if soap_tag and not re.search(r"\[SOAP:", out, flags=re.I):
+        if soap_tag and "[SOAP:" not in out.upper():
             out = f"{out}\n{soap_tag}"
-        # Default to subjective if model forgot the marker
-        if not re.search(r"\[SOAP:", out, flags=re.I):
+        elif "[SOAP:" not in out.upper():
             out = f"{out}\n[SOAP:subjective]"
 
     return out.strip()
-# End of Selectio
