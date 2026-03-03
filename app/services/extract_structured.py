@@ -9,7 +9,7 @@ from pydantic import ValidationError
 
 EXTRACTION_SYSTEM_PROMPT = """
 You are a careful data extraction assistant. Given a patient/parent–clinician style chat transcript,
-produce a single JSON object that conforms to the OurDX survey schema below. Be concise and faithful
+produce a single JSON object that conforms to the Prepare for next visit survey schema below. Be concise and faithful
 to the source; DO NOT invent facts. If a field is not supported by the transcript, set it to null
 for strings/numbers or false for booleans. Output JSON ONLY (no code fences, no commentary).
 

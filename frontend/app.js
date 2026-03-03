@@ -623,7 +623,7 @@ function buildDemographicsSystemContent(demo) {
       : "Use clear everyday language.";
   return `
 Demographics and context already collected by the app:.
-Do not ask demographic, education, health literacy, or 'who is this about' questions; proceed to the OurDX survey after demographics.
+Do not ask demographic, education, health literacy, or 'who is this about' questions; proceed to Prepare for next visit after demographics.
 Style guidance: ${adapt}
 `.trim();
 }
@@ -708,7 +708,7 @@ async function startOurdxConversation() {
     chatStarted = true;
     try { await saveTranscriptServer(); } catch {}
   } catch (e) {
-    messages.push({ role: "assistant", content: "Sorry—server error starting OurDX." });
+    messages.push({ role: "assistant", content: "Sorry—server error starting Prepare for next visit." });
     renderMessages();
   }
 }
@@ -1319,7 +1319,7 @@ function openSummaryModal(text) {
   if (summarySwitchBtn) {
     const onReview = currentViewEl && currentViewEl === reviewContainerEl;
     const onChat = currentViewEl && currentViewEl === chatContainerEl;
-    const label = onReview ? "Go to OurDX" : "Go to Review";
+    const label = onReview ? "Prepare for next visit" : "Go to Review";
     const span = summarySwitchBtn.querySelector("span");
     if (span) span.textContent = label;
     summarySwitchBtn.onclick = async () => {
