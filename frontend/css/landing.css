@@ -1,6 +1,71 @@
+/* Auth card */
+.auth-screen {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-bg);
+  padding: var(--space-6);
+}
+.auth-card {
+  background: var(--color-surface);
+  border-radius: var(--radius-tile);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08), 0 1px 4px rgba(0, 0, 0, 0.04);
+  padding: 40px 36px;
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
+}
+.auth-logo { margin-bottom: 12px; color: #ff3b30; }
+.auth-title { font-size: 22px; font-weight: 700; color: var(--color-text); margin: 0 0 4px; }
+.auth-subtitle { color: var(--color-subtext); font-size: 14px; margin: 0 0 28px; }
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  text-align: left;
+}
+.auth-form input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-field);
+  font-size: 15px;
+  box-sizing: border-box;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.auth-form input:focus { border-color: var(--accent); }
+.auth-btn {
+  width: 100%;
+  padding: 13px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-field);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 4px;
+}
+.auth-btn:hover { opacity: 0.9; }
+.auth-error { color: var(--color-accent-semantic); font-size: 13px; min-height: 18px; }
+.auth-toggle { margin-top: 20px; color: var(--color-subtext); font-size: 13px; }
+.auth-link {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0;
+}
+
 /* Ask Health landing page */
 .ask-hero {
-  background: linear-gradient(180deg, var(--ask-grad-top), var(--ask-grad-btm));
+  background: linear-gradient(180deg, #fdf8f6, #f9f6f2);
   padding: 48px 0;
   margin-top: var(--topbar-h);
 }

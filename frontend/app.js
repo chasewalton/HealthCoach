@@ -1,5 +1,6 @@
 const messages = [];
 let demographics = null;
+let currentUser = null;
 let chatMode = "ourdx"; // "ourdx" | "review"
 
 const chatEl = document.getElementById("chat");
@@ -51,6 +52,9 @@ const modalFields = {
   dob: document.getElementById("prof-dob"),
   gender: document.getElementById("prof-gender"),
   lang: document.getElementById("prof-lang"),
+  interpreter: document.getElementById("prof-interpreter"),
+  education: document.getElementById("prof-education"),
+  literacy: document.getElementById("prof-literacy"),
 };
 // Settings modal refs
 const settingsModal = document.getElementById("settings-modal");
@@ -127,18 +131,8 @@ function updateWhoVisibility() {
 whoInputs.forEach((i) => i.addEventListener("change", updateWhoVisibility));
 updateWhoVisibility();
 
-// Basic required validation for Continue button (landing inputs)
+// Landing name/DOB inputs removed — auth handled by account login
 const continueBtn = startBtn;
-function validateDemographicsRequired() {
-  const nameVal = (document.getElementById("landing-name")?.value || "").trim();
-  const dobVal = (document.getElementById("landing-dob")?.value || "").trim();
-  if (continueBtn) continueBtn.disabled = !(nameVal && dobVal);
-}
-["landing-name", "landing-dob"].forEach((id) => {
-  const el = document.getElementById(id);
-  if (el) el.addEventListener("input", validateDemographicsRequired);
-});
-validateDemographicsRequired();
 
 // Lightweight "Why we ask" handler
 document.querySelectorAll("button.why").forEach((btn) => {
@@ -506,6 +500,7 @@ async function apiPostJson(path, body) {
 
 // Server-backed transcript helpers
 function getProfile() {
+  if (demographics) return demographics;
   try { return JSON.parse(localStorage.getItem("hc_profile") || "{}"); } catch { return {}; }
 }
 function profileKeyFrom(p) {
@@ -942,8 +937,6 @@ function confirmSettings() {
   if (subtitleEl) subtitleEl.style.display = "none";
 }
 
-if (startBtn) startBtn.addEventListener("click", showSettingsPage);
-if (settingsConfirmBtn) settingsConfirmBtn.addEventListener("click", confirmSettings);
 if (settingsSaveBtn) settingsSaveBtn.addEventListener("click", confirmSettings);
 if (settingsCloseBtn) settingsCloseBtn.addEventListener("click", closeSettingsModal);
 if (settingsBackdrop) settingsBackdrop.addEventListener("click", closeSettingsModal);
@@ -952,18 +945,6 @@ if (reviewBtn) reviewBtn.addEventListener("click", async () => {
 });
 if (ourdxBtn) ourdxBtn.addEventListener("click", goToOurDX);
 if (continueOurdxBtn) continueOurdxBtn.addEventListener("click", goToOurDX);
-
-// Allow pressing Enter in the login inputs to trigger Continue
-const loginFormEl = document.querySelector(".login-form");
-if (loginFormEl) {
-  loginFormEl.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      if (!continueBtn || continueBtn.disabled) return;
-      showSettingsPage();
-    }
-  });
-}
 
 // SOAP tabs (review page)
 const soapTabsEl = document.getElementById("soap-tabs");
@@ -1067,13 +1048,7 @@ const navStack = [];
 function updateBackButtonState() {
   if (!navBackBtn) return;
   const atRoot = currentViewEl && currentViewEl.id === "ask-landing";
-  // Back should be enabled on landing if login is hidden (options visible)
-  const loginFormEl = document.querySelector(".login-form");
-  const landingOptionsEl = document.getElementById("landing-options");
-  const loginHidden = !!(loginFormEl && loginFormEl.style.display === "none");
-  const optionsVisible = !!(landingOptionsEl && landingOptionsEl.style.display !== "none");
-  const landingSubstateCanGoBack = atRoot && (loginHidden || optionsVisible);
-  const canGoBack = navStack.length > 0 || (!atRoot && !!currentViewEl) || landingSubstateCanGoBack;
+  const canGoBack = navStack.length > 0 || (!atRoot && !!currentViewEl);
   navBackBtn.disabled = !canGoBack;
   navBackBtn.style.opacity = canGoBack ? 1 : 0.5;
 }
@@ -1100,23 +1075,6 @@ function showSection(el, options = {}) {
   try { localStorage.setItem("hc_last_view", el.id || ""); } catch {}
 }
 function navigateBack() {
-  // Special handling: if we are on landing and login is hidden (options visible), restore login fields
-  const onLanding = currentViewEl && currentViewEl.id === "ask-landing";
-  if (onLanding) {
-    const loginFormEl = document.querySelector(".login-form");
-    const landingOptionsEl = document.getElementById("landing-options");
-    const loginHidden = !!(loginFormEl && loginFormEl.style.display === "none");
-    const optionsVisible = !!(landingOptionsEl && landingOptionsEl.style.display !== "none");
-    if (loginHidden || optionsVisible) {
-      if (landingOptionsEl) landingOptionsEl.style.display = "none";
-      if (loginFormEl) loginFormEl.style.display = "block";
-      const subtitleEl = document.querySelector(".page-subtitle");
-      if (subtitleEl) subtitleEl.style.display = "";
-      updateBackButtonState();
-      try { localStorage.setItem("hc_last_view", "ask-landing"); } catch {}
-      return;
-    }
-  }
   if (navStack.length > 0) {
     const prev = navStack.pop();
     hideAllSections();
@@ -1127,15 +1085,9 @@ function navigateBack() {
     try { localStorage.setItem("hc_last_view", currentViewEl.id || ""); } catch {}
     return;
   }
-  // Fallback: if no history in stack, go to landing OPTIONS (not login)
+  // Fallback: go to landing
   if (askLandingEl) {
     showSection(askLandingEl, { replace: true });
-    const loginFormEl = document.querySelector(".login-form");
-    const landingOptionsEl = document.getElementById("landing-options");
-    if (loginFormEl) loginFormEl.style.display = "none";
-    if (landingOptionsEl) landingOptionsEl.style.display = "block";
-    const subtitleEl = document.querySelector(".page-subtitle");
-    if (subtitleEl) subtitleEl.style.display = "none";
     try { localStorage.setItem("hc_last_view", "ask-landing"); } catch {}
   }
 }
@@ -1180,46 +1132,26 @@ async function startNewChat() {
 }
 if (newChatBtn) newChatBtn.addEventListener("click", startNewChat);
 
-// Restore last view if present; otherwise show landing
-(async function restoreLastView() {
-  let last = "";
-  try { last = localStorage.getItem("hc_last_view") || ""; } catch {}
-  const byId = (id) => id ? document.getElementById(id) : null;
-  if (last) {
-    const el = byId(last);
-    if (el) {
-      if (last === "review-container") {
-        showSection(reviewContainerEl, { replace: true });
-        if (chatContainerEl) chatContainerEl.style.display = "flex";
-        setPostProgress(0);
-        await goToReview();
-        return;
-      }
-      if (last === "chat-container") {
-        showSection(chatContainerEl, { replace: true });
-        try { await loadLatestTranscriptServer(); } catch {}
-        ensureChatStarted();
-        return;
-      }
-      showSection(el, { replace: true });
-      return;
-    }
-  }
-  if (askLandingEl) {
-    showSection(askLandingEl, { replace: true });
-  }
-})();
+// Check auth status and initialize app
+initApp();
 
 // Profile modal wiring
 function setProfileFields(data) {
   const p = data || {};
-  const isoDob = p.patient_dob && /^\d{4}-\d{2}-\d{2}$/.test(p.patient_dob)
-    ? p.patient_dob
-    : (p.patient_dob ? new Date(p.patient_dob).toISOString().slice(0,10) : "");
-  if (modalFields.name) modalFields.name.value = p.patient_name || "";
+  const dobVal = p.dob || p.patient_dob || "";
+  const isoDob = dobVal && /^\d{4}-\d{2}-\d{2}$/.test(dobVal)
+    ? dobVal
+    : (dobVal ? (() => { try { return new Date(dobVal).toISOString().slice(0,10); } catch { return ""; } })() : "");
+  if (modalFields.name) modalFields.name.value = p.display_name || p.patient_name || "";
   if (modalFields.dob) modalFields.dob.value = isoDob || "";
-  if (modalFields.gender) modalFields.gender.value = p.sex || "";
+  if (modalFields.gender) modalFields.gender.value = p.gender || p.sex || "";
   if (modalFields.lang) modalFields.lang.value = p.primary_language || "";
+  if (modalFields.interpreter) {
+    const v = p.interpreter_needed;
+    modalFields.interpreter.value = v === true ? "Yes" : v === false ? "No" : "";
+  }
+  if (modalFields.education) modalFields.education.value = p.education_level || "";
+  if (modalFields.literacy) modalFields.literacy.value = p.health_literacy || "";
 }
 function openProfileModal(options) {
   if (!modalEl) return;
@@ -1227,6 +1159,8 @@ function openProfileModal(options) {
   if (opts.prefill) {
     if (opts.data) {
       setProfileFields(opts.data);
+    } else if (currentUser) {
+      setProfileFields(currentUser.profile);
     } else {
       try { setProfileFields(JSON.parse(localStorage.getItem("hc_profile") || "{}")); } catch { setProfileFields({}); }
     }
@@ -1245,16 +1179,32 @@ if (modalCloseBtn) modalCloseBtn.addEventListener("click", closeProfileModal);
 if (modalBackdrop) modalBackdrop.addEventListener("click", closeProfileModal);
 if (modalSaveBtn) {
   modalSaveBtn.addEventListener("click", async () => {
-    const p = {
-      patient_name: modalFields.name ? modalFields.name.value.trim() : "",
-      patient_dob: modalFields.dob ? modalFields.dob.value : "",
-      sex: modalFields.gender ? modalFields.gender.value : "",
+    const fields = {
+      display_name: modalFields.name ? modalFields.name.value.trim() : "",
+      dob: modalFields.dob ? modalFields.dob.value : "",
+      gender: modalFields.gender ? modalFields.gender.value : "",
       primary_language: modalFields.lang ? modalFields.lang.value : "",
+      interpreter_needed: modalFields.interpreter
+        ? (modalFields.interpreter.value === "Yes" ? true : modalFields.interpreter.value === "No" ? false : null)
+        : null,
+      education_level: modalFields.education ? modalFields.education.value : "",
+      health_literacy: modalFields.literacy ? modalFields.literacy.value : "",
     };
-    try { localStorage.setItem("hc_profile", JSON.stringify(p)); } catch {}
-    if (askHeadlineEl) {
-      const name = p.patient_name || "there";
-      askHeadlineEl.textContent = `Welcome to HealthCoach, ${name}.`;
+    if (currentUser) {
+      try {
+        const res = await fetch("/auth/profile", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(fields),
+        });
+        const data = await res.json();
+        if (res.ok) applyUserData({ username: currentUser.username, profile: data.profile });
+      } catch {}
+    } else {
+      const p = { patient_name: fields.display_name, patient_dob: fields.dob, sex: fields.gender, primary_language: fields.primary_language };
+      try { localStorage.setItem("hc_profile", JSON.stringify(p)); } catch {}
+      const displayNameEl = document.getElementById("user-display-name");
+      if (displayNameEl) displayNameEl.textContent = fields.display_name || "there";
     }
     closeProfileModal();
   });
@@ -1457,3 +1407,157 @@ function saveTranscriptSnapshot() {
   list.push(snapshot);
   localStorage.setItem("hc_transcripts", JSON.stringify(list));
 }
+
+// ---- Auth ----
+
+function showAuthScreen() {
+  const authScreen = document.getElementById("auth-screen");
+  if (authScreen) authScreen.style.display = "flex";
+  if (topbarEl) topbarEl.style.display = "none";
+  hideAllSections();
+}
+
+function hideAuthScreen() {
+  const authScreen = document.getElementById("auth-screen");
+  if (authScreen) authScreen.style.display = "none";
+  if (topbarEl) topbarEl.style.display = "flex";
+}
+
+function applyUserData({ username, profile }) {
+  currentUser = { username, profile };
+  demographics = {
+    patient_name: profile.display_name || username,
+    patient_dob: profile.dob || "",
+    primary_language: profile.primary_language || "en",
+    interpreter_needed: !!profile.interpreter_needed,
+    education_level: profile.education_level || "",
+    health_literacy: profile.health_literacy || "",
+    gender: profile.gender || "",
+  };
+  const displayNameEl = document.getElementById("user-display-name");
+  if (displayNameEl) displayNameEl.textContent = profile.display_name || username;
+}
+
+function onLoginSuccess({ username, profile }) {
+  applyUserData({ username, profile });
+  hideAuthScreen();
+  showSection(askLandingEl);
+  loadLatestTranscriptServer().catch(() => {});
+}
+
+async function initApp() {
+  try {
+    const res = await fetch("/auth/me");
+    if (res.ok) {
+      const data = await res.json();
+      onLoginSuccess(data);
+    } else {
+      showAuthScreen();
+    }
+  } catch {
+    showAuthScreen();
+  }
+}
+
+async function doLogin() {
+  const username = (document.getElementById("auth-username")?.value || "").trim();
+  const password = document.getElementById("auth-password")?.value || "";
+  const errorEl = document.getElementById("auth-error");
+  if (errorEl) errorEl.textContent = "";
+  try {
+    const res = await fetch("/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      if (errorEl) errorEl.textContent = data.error || "Login failed";
+      return;
+    }
+    onLoginSuccess(data);
+  } catch (e) {
+    if (errorEl) errorEl.textContent = "Network error — please try again";
+  }
+}
+
+async function doRegister() {
+  const displayName = (document.getElementById("reg-display-name")?.value || "").trim();
+  const username = (document.getElementById("reg-username")?.value || "").trim();
+  const password = document.getElementById("reg-password")?.value || "";
+  const confirm = document.getElementById("reg-confirm")?.value || "";
+  const errorEl = document.getElementById("reg-error");
+  if (errorEl) errorEl.textContent = "";
+  if (password !== confirm) {
+    if (errorEl) errorEl.textContent = "Passwords do not match";
+    return;
+  }
+  if (password.length < 6) {
+    if (errorEl) errorEl.textContent = "Password must be at least 6 characters";
+    return;
+  }
+  try {
+    const res = await fetch("/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password, display_name: displayName }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      if (errorEl) errorEl.textContent = data.error || "Registration failed";
+      return;
+    }
+    onLoginSuccess(data);
+  } catch (e) {
+    if (errorEl) errorEl.textContent = "Network error — please try again";
+  }
+}
+
+async function doLogout() {
+  await fetch("/auth/logout", { method: "POST" }).catch(() => {});
+  currentUser = null;
+  demographics = null;
+  messages.length = 0;
+  chatStarted = false;
+  furthestSectionIndex = 0;
+  if (chatEl) chatEl.innerHTML = "";
+  showAuthScreen();
+}
+
+// Auth screen toggle between login and register forms
+const showRegisterBtn = document.getElementById("show-register");
+const showLoginBtn = document.getElementById("show-login");
+const loginFormAuthEl = document.getElementById("login-form");
+const registerFormEl = document.getElementById("register-form");
+if (showRegisterBtn) showRegisterBtn.addEventListener("click", () => {
+  if (loginFormAuthEl) loginFormAuthEl.style.display = "none";
+  if (registerFormEl) registerFormEl.style.display = "flex";
+  const subtitleEl = document.getElementById("auth-subtitle");
+  if (subtitleEl) subtitleEl.textContent = "Create your account";
+});
+if (showLoginBtn) showLoginBtn.addEventListener("click", () => {
+  if (registerFormEl) registerFormEl.style.display = "none";
+  if (loginFormAuthEl) loginFormAuthEl.style.display = "flex";
+  const subtitleEl = document.getElementById("auth-subtitle");
+  if (subtitleEl) subtitleEl.textContent = "Sign in to continue";
+});
+
+const loginBtn = document.getElementById("login-btn");
+const registerBtn = document.getElementById("register-btn");
+const logoutBtn = document.getElementById("modal-logout");
+if (loginBtn) loginBtn.addEventListener("click", doLogin);
+if (registerBtn) registerBtn.addEventListener("click", doRegister);
+if (logoutBtn) logoutBtn.addEventListener("click", async () => {
+  closeProfileModal();
+  await doLogout();
+});
+
+// Allow Enter key to submit auth forms
+const authPasswordEl = document.getElementById("auth-password");
+if (authPasswordEl) authPasswordEl.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") { e.preventDefault(); doLogin(); }
+});
+const regConfirmEl = document.getElementById("reg-confirm");
+if (regConfirmEl) regConfirmEl.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") { e.preventDefault(); doRegister(); }
+});

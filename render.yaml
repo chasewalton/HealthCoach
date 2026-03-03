@@ -19,3 +19,5 @@ services:
         value: /data
       - key: OURDX_RESPONSES_CSV
         value: /data/raw/ourdx_responses.csv
+      - key: SECRET_KEY
+        sync: false

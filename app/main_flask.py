@@ -1,7 +1,8 @@
 # app/main_flask.py
-from flask import Flask, request, jsonify, send_file, redirect
+from flask import Flask, request, jsonify, send_file, redirect, session
 from flask_cors import CORS
 import os
+import secrets
 from app.llm_client import LlamaClient, OpenAIClient, create_client
 from app.schemas import ChatRequest, ChatResponse, SummarizeRequest, SummarizeResponse
 from app.services.chat_flow import get_next_reply
@@ -9,6 +10,7 @@ from app.services.extract_structured import extract_structured
 from app.services.summary import generate_doctor_summary
 from app.utils.summary import build_clinician_summary
 from app.utils.storage import append_row_to_csv, write_json, read_json, ensure_parent_dir, list_files
+from app.utils.auth import register_user, verify_user, get_profile as get_account_profile, update_profile as update_account_profile
 from datetime import datetime, timezone
 import uuid
 import json as _json
@@ -23,6 +25,7 @@ app = Flask(
     static_url_path="/frontend",
 )
 CORS(app)
+app.secret_key = os.getenv("SECRET_KEY", secrets.token_hex(32))
 
 default_client = create_client()
 
@@ -51,6 +54,61 @@ def root():
 def ui():
     # This serves frontend/index.html
     return app.send_static_file("index.html")
+
+
+@app.post("/auth/register")
+def auth_register():
+    data = request.get_json(force=True) or {}
+    username = (data.get("username") or "").strip().lower()
+    password = data.get("password") or ""
+    display_name = (data.get("display_name") or "").strip()
+    ok, err = register_user(username, password, display_name)
+    if not ok:
+        return jsonify({"error": err}), 409
+    session["username"] = username
+    profile = get_account_profile(username)
+    return jsonify({"username": username, "profile": profile}), 201
+
+
+@app.post("/auth/login")
+def auth_login():
+    data = request.get_json(force=True) or {}
+    username = (data.get("username") or "").strip().lower()
+    password = data.get("password") or ""
+    if not verify_user(username, password):
+        return jsonify({"error": "Invalid username or password"}), 401
+    session["username"] = username
+    profile = get_account_profile(username)
+    return jsonify({"username": username, "profile": profile})
+
+
+@app.post("/auth/logout")
+def auth_logout():
+    session.clear()
+    return jsonify({"ok": True})
+
+
+@app.get("/auth/me")
+def auth_me():
+    username = session.get("username")
+    if not username:
+        return jsonify({"error": "Not authenticated"}), 401
+    profile = get_account_profile(username)
+    return jsonify({"username": username, "profile": profile})
+
+
+@app.put("/auth/profile")
+def auth_profile_update():
+    username = session.get("username")
+    if not username:
+        return jsonify({"error": "Not authenticated"}), 401
+    data = request.get_json(force=True) or {}
+    allowed = {"display_name", "dob", "primary_language", "interpreter_needed",
+               "education_level", "health_literacy", "gender"}
+    fields = {k: v for k, v in data.items() if k in allowed}
+    update_account_profile(username, fields)
+    profile = get_account_profile(username)
+    return jsonify({"profile": profile})
 
 
 @app.post("/chat")
@@ -226,8 +284,10 @@ def _get_or_create_patient_id(name: str, dob: str) -> str:
 
 
 def _transcripts_dir_for(name: str, dob: str) -> str:
-    # Store under app/data/transcripts/{patient_folder_id}
+    username = session.get("username")
     base = os.path.join(_app_data_dir(), "transcripts")
+    if username:
+        return os.path.join(base, username)
     folder_id = _get_or_create_patient_id(name, dob)
     return os.path.join(base, folder_id)
 

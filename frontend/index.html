@@ -17,7 +17,38 @@
 </head>
 <body>
   <div id="app">
-    <!-- Landing: logo + simple login + options -->
+    <!-- Auth screen (shown when not logged in) -->
+    <div id="auth-screen" class="auth-screen" style="display: none;">
+      <div class="auth-card">
+        <div class="auth-logo" aria-hidden="true">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 22l7.8-8.6 1-1a5.5 5.5 0 0 0 0-7.8z"/>
+          </svg>
+        </div>
+        <h1 class="auth-title">HealthCoach</h1>
+        <p class="auth-subtitle" id="auth-subtitle">Sign in to continue</p>
+
+        <div id="login-form" class="auth-form">
+          <input id="auth-username" type="text" placeholder="Username" autocomplete="username" />
+          <input id="auth-password" type="password" placeholder="Password" autocomplete="current-password" />
+          <button id="login-btn" class="auth-btn">Log in</button>
+          <div id="auth-error" class="auth-error"></div>
+          <p class="auth-toggle">No account? <button id="show-register" class="auth-link">Create one</button></p>
+        </div>
+
+        <div id="register-form" class="auth-form" style="display: none;">
+          <input id="reg-display-name" type="text" placeholder="Your name" autocomplete="name" />
+          <input id="reg-username" type="text" placeholder="Username" autocomplete="username" />
+          <input id="reg-password" type="password" placeholder="Password (min 6 chars)" autocomplete="new-password" />
+          <input id="reg-confirm" type="password" placeholder="Confirm password" />
+          <button id="register-btn" class="auth-btn">Create account</button>
+          <div id="reg-error" class="auth-error"></div>
+          <p class="auth-toggle">Already have an account? <button id="show-login" class="auth-link">Log in</button></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Landing: greeting + action cards -->
     <section id="ask-landing" class="ask-hero" style="display: none;">
       <div class="ask-container">
         <div class="ask-headline-wrap">
@@ -26,23 +57,10 @@
               <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 22l7.8-8.6 1-1a5.5 5.5 0 0 0 0-7.8z"/>
             </svg>
           </div>
-          <h2 class="ask-headline">Welcome to HealthCoach</h2>
-          <div class="ask-started" style="margin-top: -8px;">Please confirm the patient's name and date of birth.</div>
+          <h2 class="ask-headline">Hello, <span id="user-display-name">there</span></h2>
         </div>
-        <div class="login-form">
-          <div class="login-row">
-            <input id="landing-name" class="login-input" type="text" placeholder="Patient name" autocomplete="name" required />
-          </div>
-          <div class="login-row">
-            <input id="landing-dob" class="login-input" type="date" autocomplete="bday" required />
-          </div>
-          <div class="login-actions">
-            <button id="landing-continue" class="login-btn" disabled>Continue</button>
-          </div>
-        </div>
-        <div id="landing-options" style="display: none;">
-          <div class="ask-started" style="margin-top: 16px;">Choose a section</div>
-          <div class="ask-grid">
+        <div class="ask-started">What would you like to do today?</div>
+        <div class="ask-grid">
           <button id="ask-card-review" class="ask-card" type="button" aria-label="Review last visit">
             <div class="ask-card-icon" aria-hidden="true">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -63,7 +81,6 @@
             <div class="ask-card-title">OurDX survey</div>
             <div class="ask-card-sub">Prepare for your next visit with a short guided survey.</div>
           </button>
-          </div>
         </div>
       </div>
     </section>
@@ -104,7 +121,7 @@
         </svg>
       </button>
     </div>
-    <div id="demographics-form" class="grouped-form">
+    <div id="demographics-form" class="grouped-form" style="display: none;">
       <div class="page-header">
         <h1 class="page-title">Let's begin</h1>
         <p class="page-subtitle">Please enter the patient's name and date of birth.</p>
@@ -265,7 +282,7 @@
         </div>
         <div class="modal-body">
           <div class="modal-row">
-            <label for="prof-name">Name</label>
+            <label for="prof-name">Display name</label>
             <input id="prof-name" type="text" autocomplete="name" />
           </div>
           <div class="modal-row">
@@ -291,15 +308,45 @@
               <option value="">Prefer not to say</option>
             </select>
           </div>
+          <div class="modal-row">
+            <label for="prof-interpreter">Interpreter needed</label>
+            <select id="prof-interpreter">
+              <option value="">Prefer not to say</option>
+              <option value="Yes">Yes</option>
+              <option value="No">No</option>
+            </select>
+          </div>
+          <div class="modal-row">
+            <label for="prof-education">Education level</label>
+            <select id="prof-education">
+              <option value="">Prefer not to say</option>
+              <option value="some_high_school">Some High School</option>
+              <option value="high_school">Finished High School</option>
+              <option value="some_college">Some College</option>
+              <option value="college_degree">College Degree</option>
+              <option value="graduate_degree">Graduate/Professional Degree</option>
+            </select>
+          </div>
+          <div class="modal-row">
+            <label for="prof-literacy">Understanding of medical info</label>
+            <select id="prof-literacy">
+              <option value="">Prefer not to say</option>
+              <option value="very_easy">Very Easy</option>
+              <option value="somewhat_easy">Somewhat Easy</option>
+              <option value="somewhat_hard">Somewhat Hard</option>
+              <option value="very_hard">Very Hard</option>
+            </select>
+          </div>
         </div>
         <div class="modal-actions">
           <button id="modal-save" class="choice-submit">Save</button>
+          <button id="modal-logout" class="auth-link" style="margin-top: 12px; display: block; width: 100%; text-align: center; padding: 8px 0; color: var(--color-accent-semantic);">Log out</button>
         </div>
       </div>
     </div>
 
-    <!-- Settings modal (Confirm settings) -->
-    <div id="settings-modal" class="modal" aria-hidden="true">
+    <!-- Settings modal (deprecated — settings now in profile modal) -->
+    <div id="settings-modal" class="modal" aria-hidden="true" style="display: none;">
       <div class="modal-backdrop"></div>
       <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="settings-title">
         <div class="modal-header">
