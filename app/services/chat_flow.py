@@ -4,6 +4,10 @@ import re
 from ..llm_client import ChatClient
 from app.prompts import SURVEY_CONDUCTOR_PROMPT, FEW_SHOT_EXAMPLES, REVIEW_SOAP_PROMPT, REVIEW_FAKE_LAST_RECORD
 
+# Tokens per mode — generous enough for a question + markers + brief context
+MAX_TOKENS_OURDX = 350
+MAX_TOKENS_REVIEW = 500
+
 
 def get_next_reply(
     llama: ChatClient,
@@ -15,141 +19,152 @@ def get_next_reply(
     system_context_parts: List[str] = [m.get("content", "") for m in messages if m.get("role") == "system"]
 
     use_mode = (mode or "ourdx").strip().lower()
+
     if use_mode == "review":
         record_text = (review_record or "").strip() or REVIEW_FAKE_LAST_RECORD
-        review_intro_parts: List[str] = [REVIEW_SOAP_PROMPT]
-        if language:
-            review_intro_parts.append(f"Language: {language}")
-        review_intro_parts.append("Last record:\n" + record_text)
-        system_prompt = "\n\n".join(review_intro_parts).strip()
+        system_prompt = "\n\n".join([
+            REVIEW_SOAP_PROMPT,
+            f"Language: {language}" if language else "",
+            "Last visit record:\n" + record_text,
+        ]).strip()
     else:
         survey_system = SURVEY_CONDUCTOR_PROMPT
         if language:
-            survey_system = survey_system + f"\n\nLanguage: {language}"
-        # Add few-shot examples to guide behavior and markers/question types
-        survey_system = survey_system + "\n\n" + FEW_SHOT_EXAMPLES
+            survey_system += f"\n\nRespond in: {language}"
+        survey_system += "\n\n" + FEW_SHOT_EXAMPLES
         system_prompt = survey_system
 
-    # Add hard constraints to discourage repetition and restating sections
+    # Build hard constraints
     if use_mode == "review":
         constraints: List[str] = [
-            "Keep questions focused on SOAP progression; ask at most 3 per turn.",
-            "Do NOT duplicate questions already asked unless clarification is needed.",
+            "Ask at most ONE question per message.",
+            "Do NOT repeat questions already answered.",
+            "Always end your message with the current [SOAP:section] marker on its own line.",
             "No medical advice or treatment recommendations.",
-            "Maintain and update a short Running Summary (≤6 bullets).",
         ]
     else:
-        constraints: List[str] = [
-            "Do NOT repeat questions that were already asked; if answered, move to the next topic.",
-            "Ask ONE short question at a time.",
+        constraints = [
+            "Ask exactly ONE question per message — never bundle questions.",
+            "Always append the section marker ([S1]–[S4]) and question-type marker ([binary], [mc], or [free]) on separate lines after your question.",
+            "Do NOT repeat a question that has already been answered.",
             "No medical advice or coaching.",
         ]
+
     if system_context_parts:
-        constraints.extend(["Demographics and context were already collected by the application."])
+        constraints.append("Patient demographics and context are already collected — do NOT ask about name, age, language, education, or who this is about.")
         if use_mode != "review":
-            constraints.extend(
-                [
-                    "Do NOT ask about demographics, education, literacy, interpreter, language, or who this is about.",
-                    "Start at Section 1 and proceed in order.",
-                ]
-            )
-    # Summarize recent assistant prompts (first sentence) to avoid repeats
-    prior_assistant_lines: List[str] = []
+            constraints.append("Begin directly with Section 1.")
+
+    # Inject recent assistant turns so the model knows what was already asked
+    prior_questions: List[str] = []
     for m in messages:
         if m.get("role") != "assistant":
             continue
         text = (m.get("content") or "").strip()
         if not text:
             continue
-        first = re.split(r"[\n\.!?]", text, maxsplit=1)[0].strip()
+        # First sentence is the question
+        first = re.split(r"(?<=[.?!])\s+", text, maxsplit=1)[0].strip()
         if first:
-            prior_assistant_lines.append(first)
-    if prior_assistant_lines:
-        constraints.append("Previously asked (do not repeat): " + "; ".join(prior_assistant_lines[-6:]))
-    hard_constraints = "HARD CONSTRAINTS:\n- " + "\n- ".join(constraints)
+            prior_questions.append(first)
+    if prior_questions:
+        recent = prior_questions[-8:]
+        constraints.append("Already asked (do NOT repeat): " + " | ".join(recent))
 
-    # Combine survey prompt, examples, and constraints into a single system message
-    combined_system_content = f"{system_prompt}\n\n{hard_constraints}"
-    model_messages: List[Dict[str, str]] = [{"role": "system", "content": combined_system_content}]
+    hard_constraints = "HARD CONSTRAINTS:\n" + "\n".join(f"- {c}" for c in constraints)
+
+    combined_system = f"{system_prompt}\n\n{hard_constraints}"
+    model_messages: List[Dict[str, str]] = [{"role": "system", "content": combined_system}]
     model_messages.extend([m for m in messages if m.get("role") != "system"])
 
-    reply = llama.generate(model_messages, max_tokens=180, temperature=0.2)
+    max_tokens = MAX_TOKENS_REVIEW if use_mode == "review" else MAX_TOKENS_OURDX
+    reply = llama.generate(model_messages, max_tokens=max_tokens, temperature=0.2)
 
-    # Post-process: keep content concise, preserve lists/newlines, and KEEP hidden markers.
-    def _clean(text: str) -> str:
-        raw = text or ""
-        lines = [ln.strip() for ln in raw.splitlines() if ln.strip()]
-        # Don't remove any filler or transition lines now; keep all lines
-        # Just collect all non-empty lines
-        keep: List[str] = lines.copy()
+    return _clean(reply, use_mode)
 
-        # Check for lists (bullets or numbered)
-        has_list = any(re.match(r"^\s*(?:[-•]|\d+[)\.\-])\s+", ln) for ln in keep)
-        if has_list:
-            question = next((ln for ln in keep if not re.match(r"^\s*(?:[-•]|\d+[)\.\-])\s+", ln)), "")
-            items: List[str] = [ln for ln in keep if re.match(r"^\s*(?:[-•]|\d+[)\.\-])\s+", ln)]
-            items = items[:6]
-            out_core = "\n".join(([question] if question else []) + items).strip()
-        else:
-            cleaned = " ".join(keep).strip()
-            # Truncate to ~2 sentences or ~160 chars
-            parts = re.split(r"(?<=[\.?\!])\s+", cleaned)
-            short: List[str] = []
-            total_len = 0
-            for p in parts:
-                if not p:
-                    continue
-                if total_len + len(p) > 160:
-                    break
-                short.append(p)
-                total_len += len(p)
-                if len(short) >= 2:
-                    break
-            out_core = " ".join(short).strip()
-            # If question mark present but not at end, chop at first question
-            if "?" in cleaned and not out_core.endswith("?"):
-                m = re.search(r"([^?]+\?)", cleaned)
-                if m:
-                    out_core = m.group(1).strip()
 
-        # For OurDX we keep hidden markers; for review, we avoid injecting survey markers
-        sec_tag = None
-        qtype_tag = None
-        inferred_qtype = None
-        if use_mode != "review":
-            # Find existing section/question type markers anywhere in the text (not just EOL)
-            sec_matches = re.findall(r"\[S([1-4])\]", raw, flags=re.I | re.M)
-            sec_tag = f"[S{sec_matches[-1]}]" if sec_matches else None
-            qtype_matches = re.findall(r"\[(binary|mc|free)\]", raw, flags=re.I | re.M)
-            qtype_tag = f"[{qtype_matches[-1].lower()}]" if qtype_matches else None
-            if not qtype_tag:
-                if has_list:
-                    inferred_qtype = "[mc]"
-                elif re.search(r"\(\s*yes\s*\/\s*no\s*\)", raw, re.I) or re.search(r"\bYes\/No\b", raw, re.I):
-                    inferred_qtype = "[binary]"
+def _clean(text: str, use_mode: str) -> str:
+    raw = text or ""
 
-        out = out_core
-        # Append markers on their own lines if not already present anywhere
-        if use_mode != "review":
-            if sec_tag and not re.search(r"\[S[1-4]\]", out, flags=re.I):
-                out = f"{out}\n{sec_tag}".strip()
-            if qtype_tag and not re.search(r"\[(binary|mc|free)\]", out, flags=re.I):
-                out = f"{out}\n{qtype_tag}".strip()
-            if inferred_qtype and not re.search(r"\[(binary|mc|free)\]", out, flags=re.I):
-                out = f"{out}\n{inferred_qtype}".strip()
+    # --- Extract hidden markers before processing ---
+    sec_tag = None
+    qtype_tag = None
+    soap_tag = None
 
-        # Fallback for empty body
-        if not re.search(r"\S", re.sub(r"\[(?:S[1-4]|binary|mc|free)\]", "", out)):
-            out = (
-                "Since the last note (2026-01-05), has the chest discomfort changed in frequency, duration, or triggers?"
-                if use_mode == "review"
-                else "What are the most important things you want to talk about at your visit?"
-            )
-        # Ensure review messages carry a SOAP marker for UI progress
+    if use_mode != "review":
+        sec_matches = re.findall(r"\[S([1-4])\]", raw, flags=re.I | re.M)
+        sec_tag = f"[S{sec_matches[-1]}]" if sec_matches else None
+        qtype_matches = re.findall(r"\[(binary|mc|free)\]", raw, flags=re.I | re.M)
+        qtype_tag = f"[{qtype_matches[-1].lower()}]" if qtype_matches else None
+    else:
+        soap_matches = re.findall(r"\[SOAP:(subjective|objective|assessment|plan)\]", raw, flags=re.I | re.M)
+        soap_tag = f"[SOAP:{soap_matches[-1].lower()}]" if soap_matches else None
+
+    # Strip all markers from visible text for clean processing
+    marker_pattern = r"\[(?:S[1-4]|binary|mc|free|SOAP:(?:subjective|objective|assessment|plan))\]"
+    stripped = re.sub(marker_pattern, "", raw, flags=re.I).strip()
+
+    # Split into lines, drop blank lines
+    lines = [ln.strip() for ln in stripped.splitlines() if ln.strip()]
+
+    # Detect bullet/numbered lists
+    list_re = re.compile(r"^\s*(?:[-•]|\d+[)\.\-])\s+")
+    has_list = any(list_re.match(ln) for ln in lines)
+
+    if has_list:
+        # Keep the question line and up to 6 list items
+        question_lines = [ln for ln in lines if not list_re.match(ln)]
+        item_lines = [ln for ln in lines if list_re.match(ln)][:6]
+        out_core = "\n".join((question_lines[:1] if question_lines else []) + item_lines).strip()
+    else:
+        # Rejoin, then take up to 3 sentences or 320 characters
+        full = " ".join(lines).strip()
+        sentences = re.split(r"(?<=[.?!])\s+", full)
+        short: List[str] = []
+        total = 0
+        for s in sentences:
+            if not s:
+                continue
+            if total + len(s) > 320 and short:
+                break
+            short.append(s)
+            total += len(s)
+            if len(short) >= 3:
+                break
+        out_core = " ".join(short).strip()
+
+        # If we trimmed a question mark off, recover first complete question
+        if "?" in full and not out_core.endswith("?"):
+            m = re.search(r"([^?]+\?)", full)
+            if m:
+                out_core = m.group(1).strip()
+
+    # --- Re-attach markers ---
+    out = out_core
+    if use_mode != "review":
+        if sec_tag and not re.search(r"\[S[1-4]\]", out, flags=re.I):
+            out = f"{out}\n{sec_tag}"
+        if qtype_tag and not re.search(r"\[(binary|mc|free)\]", out, flags=re.I):
+            out = f"{out}\n{qtype_tag}"
+        # Infer question type if model forgot to include it
+        if not re.search(r"\[(binary|mc|free)\]", out, flags=re.I):
+            if has_list:
+                out = f"{out}\n[mc]"
+            elif re.search(r"\b(yes\s*/\s*no|yes or no)\b", raw, re.I):
+                out = f"{out}\n[binary]"
+    else:
+        if soap_tag and not re.search(r"\[SOAP:", out, flags=re.I):
+            out = f"{out}\n{soap_tag}"
+        # Default to subjective if model forgot the marker
+        if not re.search(r"\[SOAP:", out, flags=re.I):
+            out = f"{out}\n[SOAP:subjective]"
+
+    # Fallback if the body came back empty
+    body_only = re.sub(marker_pattern, "", out, flags=re.I).strip()
+    if not body_only:
         if use_mode == "review":
-            if not re.search(r"\[SOAP:(?:subjective|objective|assessment|plan)\]", raw, flags=re.I):
-                # Default to subjective if not specified by the model
-                out = f"{out}\n[SOAP:subjective]".strip()
-        return out or raw
+            out = "Has anything changed since your last visit on 2026-01-05?\n[SOAP:subjective]"
+        else:
+            out = "What are the most important things you want to talk about at your visit?\n[S1]\n[free]"
 
-    return _clean(reply)
+    return out.strip()

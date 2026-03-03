@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Prompt Editor — HealthCoach</title>
+  <style>
+    :root {
+      --accent: #0a84ff;
+      --bg: #f7f8fa;
+      --surface: #fff;
+      --border: #e5e7eb;
+      --text: #111827;
+      --subtext: #6b7280;
+      --radius: 12px;
+      --error: #e14848;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: ui-sans-serif, -apple-system, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+    /* Auth gate */
+    #auth-gate {
+      min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px;
+    }
+    .gate-card {
+      background: var(--surface); border-radius: var(--radius); box-shadow: 0 4px 24px rgba(0,0,0,.08);
+      padding: 40px 36px; width: 100%; max-width: 360px; text-align: center;
+    }
+    .gate-card h1 { font-size: 20px; font-weight: 700; margin-bottom: 6px; }
+    .gate-card p { color: var(--subtext); font-size: 14px; margin-bottom: 24px; }
+    .gate-card input {
+      width: 100%; padding: 12px 14px; border: 1.5px solid var(--border); border-radius: var(--radius);
+      font-size: 15px; outline: none; margin-bottom: 12px;
+    }
+    .gate-card input:focus { border-color: var(--accent); }
+    .gate-card button {
+      width: 100%; padding: 12px; background: var(--accent); color: #fff; border: none;
+      border-radius: var(--radius); font-size: 15px; font-weight: 600; cursor: pointer;
+    }
+    .gate-card button:hover { opacity: .9; }
+    #gate-error { color: var(--error); font-size: 13px; margin-top: 10px; min-height: 18px; }
+
+    /* Editor */
+    #editor-app { display: none; max-width: 960px; margin: 0 auto; padding: 32px 24px 80px; }
+    .editor-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 32px; }
+    .editor-header h1 { font-size: 20px; font-weight: 700; }
+    .editor-header p { color: var(--subtext); font-size: 13px; margin-top: 2px; }
+    .save-bar { display: flex; align-items: center; gap: 12px; }
+    #save-btn {
+      padding: 10px 22px; background: var(--accent); color: #fff; border: none;
+      border-radius: 999px; font-size: 14px; font-weight: 600; cursor: pointer;
+    }
+    #save-btn:hover { opacity: .9; }
+    #save-btn:disabled { opacity: .5; cursor: default; }
+    #save-status { font-size: 13px; color: var(--subtext); }
+
+    .prompt-block { margin-bottom: 32px; }
+    .prompt-label {
+      font-size: 13px; font-weight: 600; color: var(--subtext); text-transform: uppercase;
+      letter-spacing: .04em; margin-bottom: 8px;
+    }
+    .prompt-desc { font-size: 13px; color: var(--subtext); margin-bottom: 10px; }
+    textarea {
+      width: 100%; min-height: 320px; padding: 14px 16px;
+      border: 1.5px solid var(--border); border-radius: var(--radius);
+      font-family: "SF Mono", "Fira Code", ui-monospace, monospace;
+      font-size: 13px; line-height: 1.6; resize: vertical; outline: none;
+      background: var(--surface); color: var(--text);
+    }
+    textarea:focus { border-color: var(--accent); }
+    .reset-btn {
+      margin-top: 6px; background: none; border: none; color: var(--subtext);
+      font-size: 12px; cursor: pointer; padding: 0;
+    }
+    .reset-btn:hover { color: var(--text); }
+    hr { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
+  </style>
+</head>
+<body>
+
+<!-- Auth gate -->
+<div id="auth-gate">
+  <div class="gate-card">
+    <h1>Prompt Editor</h1>
+    <p>Enter the editor password to continue.</p>
+    <input id="gate-password" type="password" placeholder="Password" autocomplete="current-password" />
+    <button id="gate-btn">Unlock</button>
+    <div id="gate-error"></div>
+  </div>
+</div>
+
+<!-- Editor -->
+<div id="editor-app">
+  <div class="editor-header">
+    <div>
+      <h1>Prompt Editor</h1>
+      <p>Changes take effect immediately (until next redeploy). Refresh to discard.</p>
+    </div>
+    <div class="save-bar">
+      <span id="save-status"></span>
+      <button id="save-btn">Save all</button>
+    </div>
+  </div>
+
+  <div class="prompt-block">
+    <div class="prompt-label">OurDX Survey Prompt</div>
+    <div class="prompt-desc">Main system prompt for the patient survey flow (Sections 1–4).</div>
+    <textarea id="prompt-SURVEY_CONDUCTOR_PROMPT"></textarea>
+  </div>
+
+  <hr>
+
+  <div class="prompt-block">
+    <div class="prompt-label">Few-Shot Examples</div>
+    <div class="prompt-desc">Example conversation shown to the model to teach format and marker usage.</div>
+    <textarea id="prompt-FEW_SHOT_EXAMPLES"></textarea>
+  </div>
+
+  <hr>
+
+  <div class="prompt-block">
+    <div class="prompt-label">Review (Last Visit) Prompt</div>
+    <div class="prompt-desc">System prompt for the "Review last visit" SOAP conversation mode.</div>
+    <textarea id="prompt-REVIEW_SOAP_PROMPT"></textarea>
+  </div>
+</div>
+
+<script>
+  const PROMPTS = ["SURVEY_CONDUCTOR_PROMPT", "FEW_SHOT_EXAMPLES", "REVIEW_SOAP_PROMPT"];
+  let originals = {};
+
+  // Auth gate
+  const gateEl = document.getElementById("auth-gate");
+  const editorEl = document.getElementById("editor-app");
+  const gatePasswordEl = document.getElementById("gate-password");
+  const gateBtnEl = document.getElementById("gate-btn");
+  const gateErrorEl = document.getElementById("gate-error");
+
+  async function unlock() {
+    gateErrorEl.textContent = "";
+    const password = gatePasswordEl.value;
+    const res = await fetch("/editor/auth", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password }),
+    });
+    const data = await res.json();
+    if (!res.ok) { gateErrorEl.textContent = data.error || "Wrong password"; return; }
+    gateEl.style.display = "none";
+    editorEl.style.display = "block";
+    await loadPrompts();
+  }
+
+  gateBtnEl.addEventListener("click", unlock);
+  gatePasswordEl.addEventListener("keydown", e => { if (e.key === "Enter") unlock(); });
+
+  // Load prompts
+  async function loadPrompts() {
+    const res = await fetch("/editor/prompts");
+    if (!res.ok) return;
+    const data = await res.json();
+    originals = { ...data };
+    for (const name of PROMPTS) {
+      const ta = document.getElementById(`prompt-${name}`);
+      if (ta) ta.value = data[name] || "";
+    }
+  }
+
+  // Save
+  const saveBtnEl = document.getElementById("save-btn");
+  const saveStatusEl = document.getElementById("save-status");
+
+  saveBtnEl.addEventListener("click", async () => {
+    saveBtnEl.disabled = true;
+    saveStatusEl.textContent = "Saving…";
+    const payload = {};
+    for (const name of PROMPTS) {
+      const ta = document.getElementById(`prompt-${name}`);
+      if (ta) payload[name] = ta.value;
+    }
+    try {
+      const res = await fetch("/editor/prompts", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) {
+        saveStatusEl.textContent = "Saved ✓";
+        originals = { ...payload };
+      } else {
+        saveStatusEl.textContent = "Save failed";
+      }
+    } catch {
+      saveStatusEl.textContent = "Network error";
+    } finally {
+      saveBtnEl.disabled = false;
+      setTimeout(() => { saveStatusEl.textContent = ""; }, 3000);
+    }
+  });
+
+  // Warn before leaving with unsaved changes
+  window.addEventListener("beforeunload", e => {
+    const changed = PROMPTS.some(name => {
+      const ta = document.getElementById(`prompt-${name}`);
+      return ta && ta.value !== (originals[name] || "");
+    });
+    if (changed) { e.preventDefault(); e.returnValue = ""; }
+  });
+</script>
+</body>
+</html>

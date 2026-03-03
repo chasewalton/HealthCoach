@@ -23,3 +23,5 @@ services:
         value: /data/raw/ourdx_responses.csv
       - key: SECRET_KEY
         sync: false
+      - key: EDITOR_PASSWORD
+        sync: false

@@ -11,6 +11,7 @@ from app.services.summary import generate_doctor_summary
 from app.utils.summary import build_clinician_summary
 from app.utils.storage import append_row_to_csv, write_json, read_json, ensure_parent_dir, list_files
 from app.utils.auth import register_user, verify_user, get_profile as get_account_profile, update_profile as update_account_profile
+import app.prompts as _prompts
 from datetime import datetime, timezone
 import uuid
 import json as _json
@@ -109,6 +110,47 @@ def auth_profile_update():
     update_account_profile(username, fields)
     profile = get_account_profile(username)
     return jsonify({"profile": profile})
+
+
+# ---- Prompt editor (password-gated) ----
+EDITOR_PASSWORD = os.getenv("EDITOR_PASSWORD", "editor")
+
+_EDITABLE_PROMPTS = ["SURVEY_CONDUCTOR_PROMPT", "FEW_SHOT_EXAMPLES", "REVIEW_SOAP_PROMPT"]
+
+
+@app.get("/editor")
+def editor_ui():
+    return app.send_static_file("editor.html")
+
+
+@app.post("/editor/auth")
+def editor_auth():
+    data = request.get_json(force=True) or {}
+    if data.get("password") == EDITOR_PASSWORD:
+        session["editor"] = True
+        return jsonify({"ok": True})
+    return jsonify({"error": "Wrong password"}), 401
+
+
+@app.get("/editor/prompts")
+def editor_get_prompts():
+    if not session.get("editor"):
+        return jsonify({"error": "Not authorized"}), 401
+    result = {}
+    for name in _EDITABLE_PROMPTS:
+        result[name] = getattr(_prompts, name, "")
+    return jsonify(result)
+
+
+@app.put("/editor/prompts")
+def editor_save_prompts():
+    if not session.get("editor"):
+        return jsonify({"error": "Not authorized"}), 401
+    data = request.get_json(force=True) or {}
+    for name in _EDITABLE_PROMPTS:
+        if name in data and isinstance(data[name], str):
+            setattr(_prompts, name, data[name])
+    return jsonify({"ok": True})
 
 
 @app.post("/chat")
