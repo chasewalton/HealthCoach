@@ -1,9 +1,11 @@
+# Start of Selection
 # app/services/chat_flow.py
 """Combines prompts with runtime context, calls LLM, extracts/cleans markers. All instructions live in prompts.py."""
 from typing import List, Dict, Optional
 import re
 from ..llm_client import ChatClient
 from app.prompts import (
+    SYSTEM_PROMPT_EN,
     SURVEY_CONDUCTOR_PROMPT,
     REVIEW_SOAP_PROMPT,
     REVIEW_FAKE_LAST_RECORD,
@@ -22,45 +24,40 @@ def get_next_reply(
     mode: Optional[str] = None,
     review_record: Optional[str] = None,
 ) -> str:
+    """
+    Always sends instructions to the model via a `system` message. 
+    For all modes, the SYSTEM_PROMPT_EN instructions are included at the top, followed by mode-specific context and dynamic values.
+    """
     system_context_parts: List[str] = [m.get("content", "") for m in messages if m.get("role") == "system"]
 
     use_mode = (mode or "ourdx").strip().lower()
 
+    # SYSTEM_PROMPT_EN used as the instruction base in every mode
     if use_mode == "review":
         record_text = (review_record or "").strip() or REVIEW_FAKE_LAST_RECORD
-        system_prompt = "\n\n".join([
-            REVIEW_SOAP_PROMPT,
-            f"Language: {language}" if language else "",
+        base_instructions = [
+            SYSTEM_PROMPT_EN.strip(),
+            REVIEW_SOAP_PROMPT.strip(),
             "Last visit record:\n" + record_text,
-        ]).strip()
+        ]
+        system_prompt = "\n\n".join([part for part in base_instructions if part]).strip()
     else:
-        survey_system = SURVEY_CONDUCTOR_PROMPT
-        if language:
-            survey_system += f"\n\nRespond in: {language}"
-        system_prompt = survey_system
+        survey_system = [
+            SYSTEM_PROMPT_EN.strip(),
+            SURVEY_CONDUCTOR_PROMPT.strip(),
+        ]
+        system_prompt = "\n\n".join([part for part in survey_system if part]).strip()
 
-    # Inject runtime context (instructions are in prompts; we only add values)
-    prior_questions: List[str] = []
-    for m in messages:
-        if m.get("role") != "assistant":
-            continue
-        text = (m.get("content") or "").strip()
-        if not text:
-            continue
-        first = re.split(r"(?<=[.?!])\s+", text, maxsplit=1)[0].strip()
-        if first:
-            prior_questions.append(first)
-
+    # Compose system content without prior questions logic
     system_content = system_prompt
     if system_context_parts:
         patient_text = "\n".join(s.strip() for s in system_context_parts if s.strip())
         system_content = f"{system_prompt}\n\n{CONTEXT_PATIENT_LABEL}\n{patient_text}"
-    if prior_questions:
-        recent = prior_questions[-8:]
-        system_content = f"{system_content}\n\n{CONTEXT_ALREADY_ASKED_LABEL} " + " | ".join(recent)
+
+    # SYSTEM message always present at top
     model_messages: List[Dict[str, str]] = [{"role": "system", "content": system_content}]
     conv_messages = [m for m in messages if m.get("role") != "system"]
-    # When conversation is empty, inject starter so model initiates first
+    # When conversation is empty, inject a starter so model initiates first
     if not any(m.get("role") == "user" for m in conv_messages):
         starter = "Hi" if use_mode != "review" else "I'd like to review my last visit."
         conv_messages = [{"role": "user", "content": starter}]
@@ -138,3 +135,4 @@ def _clean(text: str, use_mode: str) -> str:
             out = f"{out}\n[SOAP:subjective]"
 
     return out.strip()
+# End of Selectio
