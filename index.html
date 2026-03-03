@@ -909,6 +909,77 @@
     }
     .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
 
+    /* Note card */
+    .note-card {
+      background: var(--color-surface);
+      border-radius: var(--radius-xl);
+      padding: 18px 20px;
+      border: 1.5px solid var(--color-border-subtle);
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      max-width: 680px;
+      margin: 0 auto 0;
+      width: calc(100% - 48px);
+    }
+    .note-card-icon {
+      width: 40px; height: 40px;
+      border-radius: var(--radius-md);
+      background: var(--teal-50);
+      color: var(--teal-600);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .note-card-icon svg { width: 20px; height: 20px; }
+    .note-card-body { flex: 1; min-width: 0; }
+    .note-card-label { font-size: 13px; font-weight: 700; color: var(--neutral-800); }
+    .note-card-sub { font-size: 12px; color: var(--neutral-400); margin-top: 2px; }
+    .note-card-btn {
+      font-size: 13px; font-weight: 600;
+      color: var(--teal-600);
+      padding: 7px 14px;
+      border-radius: var(--radius-full);
+      border: 1.5px solid var(--teal-200);
+      background: var(--teal-50);
+      white-space: nowrap;
+      transition: all 0.15s;
+      flex-shrink: 0;
+    }
+    .note-card-btn:hover { background: var(--teal-100); border-color: var(--teal-300); }
+
+    /* Note modal textarea */
+    .note-textarea {
+      width: 100%;
+      min-height: 180px;
+      max-height: 320px;
+      border: 1.5px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      font-size: 14px;
+      font-family: var(--font-body);
+      color: var(--color-text);
+      background: var(--neutral-50);
+      resize: vertical;
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+      line-height: 1.6;
+    }
+    .note-textarea:focus {
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 3px rgba(14,159,140,0.10);
+      background: white;
+    }
+    .note-char-count {
+      font-size: 12px;
+      color: var(--neutral-400);
+      text-align: right;
+      margin-top: 6px;
+    }
+    .note-modal-actions {
+      display: flex; gap: 10px; margin-top: 20px;
+    }
+
     /* =====================
        UTILITIES
     ===================== */
@@ -1009,6 +1080,18 @@
           <div class="action-card-desc">Tell your care team what matters most to you before your appointment.</div>
         </div>
       </button>
+    </div>
+
+    <!-- Note Card -->
+    <div class="note-card" id="note-card" style="margin-bottom:24px">
+      <div class="note-card-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      </div>
+      <div class="note-card-body">
+        <div class="note-card-label" id="note-card-label">Demo Note Active</div>
+        <div class="note-card-sub" id="note-card-sub">Last visit: Feb 14, 2025</div>
+      </div>
+      <button class="note-card-btn" onclick="openNoteModal()">Paste Your Own</button>
     </div>
 
     <!-- Recent Conversations -->
@@ -1203,6 +1286,26 @@
     </div>
   </div>
 
+  <!-- Note Upload Modal -->
+  <div class="modal-overlay" id="modal-note" onclick="closeModalOnOverlay(event,'modal-note')">
+    <div class="modal">
+      <div class="modal-drag"></div>
+      <div class="modal-header">
+        <div class="modal-title">Your Visit Note</div>
+        <button class="modal-close" onclick="closeModal('modal-note')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <p style="font-size:14px;color:var(--neutral-500);margin-bottom:16px;line-height:1.6">Paste your SOAP note or any clinic visit notes below. HealthCoach will use these to personalize your experience.</p>
+      <textarea class="note-textarea" id="note-textarea" placeholder="Paste your visit notes here…" maxlength="10000" oninput="updateNoteCharCount()"></textarea>
+      <div class="note-char-count"><span id="note-char-count">0</span> / 10,000</div>
+      <div class="note-modal-actions">
+        <button class="btn-primary" style="flex:2;margin-top:0" onclick="submitNote()">Save Note</button>
+        <button class="btn-outline" style="flex:1;margin-top:0" onclick="useDefaultNote()">Use Demo Note</button>
+      </div>
+    </div>
+  </div>
+
   <!-- History Drawer -->
   <div class="drawer-overlay" id="drawer-history" onclick="closeDrawerOnOverlay(event)">
     <div class="drawer">
@@ -1229,20 +1332,16 @@
     const state = {
       user: null,
       profile: {},
-      chatMode: null,        // 'review' | 'prepare'
-      messages: [],          // {role, content, chips?}[]
-      sessions: [],          // stored past sessions
-      soapSection: 0,        // for review mode
-      prepSection: 0,        // for prepare mode
+      chatMode: null,              // 'review' | 'prepare'
+      messages: [],                // {role, content, chips?}[]
+      sessions: [],                // fetched from API
+      soapSection: 0,
+      prepSection: 0,
       isTyping: false,
       authMode: 'signin',
-    };
-
-    /* ============================================================
-       USERS DB (mock in-memory)
-    ============================================================ */
-    const users = {
-      'demo': { password: 'demo', displayName: 'Alex' },
+      patientRecord: null,         // SOAP note object from API
+      patientRecordIsDefault: true,
+      currentSessionId: null,      // UUID for the active chat session
     };
 
     /* ============================================================
@@ -1264,38 +1363,54 @@
       document.getElementById('auth-error').classList.remove('visible');
     }
 
-    function handleAuth(e) {
+    async function handleAuth(e) {
       e.preventDefault();
       const username = document.getElementById('inp-username').value.trim();
       const password = document.getElementById('inp-password').value;
       const errEl = document.getElementById('auth-error');
+      const btn = document.getElementById('auth-btn');
 
+      btn.disabled = true;
+      btn.textContent = 'Please wait…';
+      errEl.classList.remove('visible');
+
+      const endpoint = state.authMode === 'register' ? '/api/auth/register' : '/api/auth/login';
+      const body = { username, password };
       if (state.authMode === 'register') {
-        const displayName = document.getElementById('inp-displayname').value.trim() || username;
-        users[username] = { password, displayName };
-        state.user = { username, displayName };
-        state.profile.name = displayName;
-        enterApp();
-        openProfileOnboarding('setup');
-      } else {
-        const u = users[username];
-        if (u && u.password === password) {
-          state.user = { username, displayName: u.displayName };
-          state.profile.name = u.displayName;
-          enterApp();
-          openProfileOnboarding('confirm');
-        } else {
-          errEl.textContent = 'Incorrect username or password.';
+        body.displayName = document.getElementById('inp-displayname').value.trim() || username;
+      }
+
+      try {
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          errEl.textContent = data.error || 'Something went wrong.';
           errEl.classList.add('visible');
           document.getElementById('inp-password').value = '';
+          return;
         }
+        state.user = { username: data.username, displayName: data.displayName };
+        await enterApp();
+        openProfileOnboarding(state.authMode === 'register' ? 'setup' : 'confirm');
+      } catch (err) {
+        errEl.textContent = 'Could not connect to server. Please try again.';
+        errEl.classList.add('visible');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = state.authMode === 'register' ? 'Create Account →' : 'Sign In →';
       }
     }
 
-    function enterApp() {
+    async function enterApp() {
       showScreen('landing');
+      await Promise.all([fetchProfile(), fetchPatientRecord()]);
       updateLandingPersonalization();
-      renderRecentList();
+      updateNoteCard();
+      await renderRecentList();
     }
 
     function openProfileOnboarding(mode) {
@@ -1306,10 +1421,34 @@
       openProfile();
     }
 
-    function handleSignOut() {
+    async function handleSignOut() {
+      try { await fetch('/api/auth/logout', { method: 'POST' }); } catch (_) {}
       state.user = null;
+      state.profile = {};
+      state.sessions = [];
+      state.patientRecord = null;
+      state.patientRecordIsDefault = true;
       closeModal('modal-profile');
       showScreen('auth');
+    }
+
+    async function fetchProfile() {
+      try {
+        const res = await fetch('/api/profile');
+        if (!res.ok) return;
+        const data = await res.json();
+        state.profile = { ...state.profile, ...data };
+      } catch (_) {}
+    }
+
+    async function fetchPatientRecord() {
+      try {
+        const res = await fetch('/api/record');
+        if (!res.ok) return;
+        const data = await res.json();
+        state.patientRecord = data.content;
+        state.patientRecordIsDefault = data.isDefault;
+      } catch (_) {}
     }
 
     /* ============================================================
@@ -1320,14 +1459,14 @@
       document.getElementById('screen-' + name).classList.add('active');
     }
 
-    function goBack() {
-      saveCurrentSession();
+    async function goBack() {
+      await saveCurrentSession();
       showScreen('landing');
-      renderRecentList();
+      await renderRecentList();
     }
 
-    function startNewChat() {
-      saveCurrentSession();
+    async function startNewChat() {
+      await saveCurrentSession();
       startChat(state.chatMode);
     }
 
@@ -1346,13 +1485,21 @@
       }
     }
 
-    function renderRecentList() {
+    async function renderRecentList() {
+      try {
+        const res = await fetch('/api/sessions');
+        if (res.ok) {
+          const data = await res.json();
+          state.sessions = data.sessions || [];
+        }
+      } catch (_) {}
+
       const list = document.getElementById('recent-list');
       if (!state.sessions.length) {
         list.innerHTML = `<div style="padding:20px 0;text-align:center;color:var(--neutral-400);font-size:14px;">No conversations yet — start one above!</div>`;
         return;
       }
-      list.innerHTML = state.sessions.slice(-5).reverse().map(s => `
+      list.innerHTML = state.sessions.slice(0, 5).map(s => `
         <div class="recent-item" onclick="loadSession('${s.id}')">
           <div class="recent-item-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1383,6 +1530,7 @@
       state.messages = [];
       state.soapSection = 0;
       state.prepSection = 0;
+      state.currentSessionId = null;
 
       const modeLabel = document.getElementById('chat-mode-label');
       const titleEl   = document.getElementById('chat-title');
@@ -1411,12 +1559,14 @@
 
       // Initial greeting
       setTimeout(() => {
+        const firstName = state.profile.name ? ' ' + state.profile.name.split(' ')[0] : '';
         if (mode === 'review') {
-          const intro = `Hi${state.profile.name ? ' ' + state.profile.name.split(' ')[0] : ''}! 👋 I'll walk you through your last visit step by step, starting with the **Subjective** section — that's everything you told your doctor about how you were feeling.\n\nDuring your last visit you mentioned **chest discomfort**, and your doctor noted a history of **GERD and hyperlipidemia**. Ready to go through it together?`;
+          const visitDate = state.patientRecord?.visitDate ? ` from **${state.patientRecord.visitDate}**` : '';
+          const intro = `Hi${firstName}! 👋 I'll walk you through your last visit${visitDate} step by step, starting with the **Subjective** section — that's everything you told your doctor about how you were feeling.\n\nI'll explain everything in plain language as we go. Ready to start?`;
           addAssistantMessage(intro, ['Yes, let\'s start', 'Not right now']);
           setProgress(5);
         } else {
-          const intro = `Hi${state.profile.name ? ' ' + state.profile.name.split(' ')[0] : ''}! I'm here to help you prepare for your next clinic visit. 🌿\n\nWe'll go through four short sections together. First up: **What matters most to you** about your health right now.\n\nWhat's the main concern or goal you want to talk about with your doctor?`;
+          const intro = `Hi${firstName}! I'm here to help you prepare for your next clinic visit. 🌿\n\nWe'll go through four short sections together. First up: **What matters most to you** about your health right now.\n\nWhat's the main concern or goal you want to talk about with your doctor?`;
           addAssistantMessage(intro);
           setProgress(5);
         }
@@ -1521,130 +1671,100 @@
       }
     }
 
-    function processUserInput(text) {
-      // Emergency detection
+    async function processUserInput(text) {
+      // Emergency detection (frontend only — no API call needed)
       const emergency = /chest pain|can't breathe|can not breathe|suicid|emergency|call 911|heart attack/i.test(text);
       if (emergency) {
-        showTypingThenRespond(`⚠️ **This sounds like an emergency.** Please call **911** or go to your nearest emergency room immediately. Please don't wait.\n\nIf you're safe and this was a general question, let me know and we can continue.`, [], 800);
+        addAssistantMessage(`⚠️ **This sounds like an emergency.** Please call **911** or go to your nearest emergency room immediately. Please don't wait.\n\nIf you're safe and this was a general question, let me know and we can continue.`);
+        document.getElementById('send-btn').disabled = false;
         return;
       }
 
-      if (state.chatMode === 'review') {
-        handleReviewResponse(text);
-      } else {
-        handlePrepareResponse(text);
-      }
-    }
+      if (/\bsummary\b/i.test(text)) { openSummary(); document.getElementById('send-btn').disabled = false; return; }
 
-    const reviewFlow = [
-      {
-        section: 0,
-        response: `Great! Here's what you shared (**Subjective**):\n\n• Chief complaint: chest discomfort, especially after meals\n• You described it as a burning sensation in your upper chest\n• You mentioned it started about 3 weeks ago\n• Worse when lying down; better after antacids\n\nDoes that sound right?`,
-        chips: ['Yes, that\'s right', 'Something\'s missing', 'What does Subjective mean?'],
-        progress: 25,
-      },
-      {
-        section: 1,
-        response: `Now the **Objective** section — what your doctor observed and measured:\n\n• Blood pressure: 142/88 mmHg (slightly elevated)\n• Weight: 185 lbs\n• Physical exam: mild epigastric tenderness\n• EKG: normal\n• Fasting lipid panel ordered\n\nThese are the facts your care team recorded. Any questions about any of these?`,
-        chips: ['All clear, continue', 'What\'s epigastric mean?', 'Why was an EKG done?'],
-        progress: 50,
-      },
-      {
-        section: 2,
-        response: `The **Assessment** is your doctor's interpretation — what they think is going on:\n\n• **GERD** (gastroesophageal reflux disease) — most likely cause of your chest discomfort\n• **Hyperlipidemia** — high cholesterol, being monitored\n• **Hypertension** (borderline) — blood pressure needs watching\n\nThink of this section as the "diagnosis" part of your visit.`,
-        chips: ['Got it, what\'s next?', 'What is GERD exactly?', 'Is borderline hypertension serious?'],
-        progress: 75,
-      },
-      {
-        section: 3,
-        response: `Finally, the **Plan** — what happens next:\n\n• Start **omeprazole** (a proton pump inhibitor) 20mg once daily\n• Avoid triggers: caffeine, spicy food, large meals before bed\n• Follow up in 4 weeks to review lipid panel\n• If chest discomfort worsens, come in sooner\n\nYou're all caught up on your last visit! 🎉 Would you like a summary to share with your provider?`,
-        chips: ['Yes, generate summary', 'No thanks'],
-        progress: 100,
-      },
-    ];
-
-    let reviewStep = 0;
-
-    function handleReviewResponse(text) {
-      if (/yes|right|clear|continue|next|got it|sure|ok/i.test(text) || text.length > 20) {
-        reviewStep = Math.min(reviewStep + 1, reviewFlow.length - 1);
-      }
-      const flow = reviewFlow[reviewStep] || reviewFlow[reviewFlow.length - 1];
-      const sections = SOAP_SECTIONS;
-      renderSectionPills(sections, flow.section);
-      setProgress(flow.progress);
-      if (/summary/i.test(text)) {
-        openSummary();
-        return;
-      }
-      showTypingThenRespond(flow.response, flow.chips);
-      if (reviewStep < reviewFlow.length - 1) reviewStep++;
-    }
-
-    const prepFlow = [
-      {
-        section: 1,
-        response: `That's really helpful — I've noted that as your main concern. ✍️\n\nNow let's talk about the **past 6 months** of your health. Have you had any new symptoms, ER visits, lab tests, or changes in medication since your last visit?`,
-        chips: ['Yes, a few things', 'Nothing major', 'I\'m not sure'],
-        progress: 30,
-      },
-      {
-        section: 2,
-        response: `Good to know. Let's talk about **Getting It Right** — making sure your care is working.\n\nAt your last visit, did you feel like your concerns were really heard by your provider?`,
-        chips: ['Yes, mostly', 'Not really', 'I didn\'t have concerns then'],
-        progress: 60,
-      },
-      {
-        section: 3,
-        response: `Wonderful — we're almost done! 🌟\n\nHere's a quick summary of what you've shared:\n• Your main concern has been noted\n• We've captured recent health changes\n• We've noted how well your last visit went\n\nWhen you arrive, **tell your provider you completed the HealthCoach preparation** — they'll get a summary of everything we discussed. You're all set!`,
-        chips: ['Generate summary', 'Start over'],
-        progress: 100,
-      },
-    ];
-
-    let prepStep = 0;
-
-    function handlePrepareResponse(text) {
-      if (/summary/i.test(text)) { openSummary(); return; }
-      if (/start over/i.test(text)) { startChat('prepare'); return; }
-
-      const flow = prepFlow[Math.min(prepStep, prepFlow.length - 1)];
-      renderSectionPills(PREP_SECTIONS, flow.section);
-      setProgress(flow.progress);
-      showTypingThenRespond(flow.response, flow.chips);
-      if (prepStep < prepFlow.length - 1) prepStep++;
-    }
-
-    function showTypingThenRespond(text, chips, delay = 1200) {
       state.isTyping = true;
       showTyping();
-      setTimeout(() => {
+
+      // Build history from state.messages (exclude the message we just added)
+      const history = state.messages.slice(0, -1).map(m => ({ role: m.role, content: m.content }));
+
+      try {
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: text,
+            history,
+            mode: state.chatMode,
+            record: state.patientRecord || {},
+          }),
+        });
+        const data = await res.json();
         removeTyping();
-        addAssistantMessage(text, chips);
+        if (!res.ok) {
+          addAssistantMessage(data.error || 'Something went wrong. Please try again.');
+        } else {
+          addAssistantMessage(data.reply);
+          updateProgressHeuristic();
+        }
+      } catch (err) {
+        removeTyping();
+        addAssistantMessage('Unable to reach the server. Please check your connection and try again.');
+      } finally {
         state.isTyping = false;
-      }, delay);
+        document.getElementById('send-btn').disabled = false;
+      }
+    }
+
+    function updateProgressHeuristic() {
+      // Advance section pills based on assistant turn count
+      const assistantTurns = state.messages.filter(m => m.role === 'assistant').length;
+      const sections = state.chatMode === 'review' ? SOAP_SECTIONS : PREP_SECTIONS;
+      const totalSections = sections.length;
+      // Each section roughly covers 2 assistant turns; clamp to last section
+      const activeIdx = Math.min(Math.floor((assistantTurns - 1) / 2), totalSections - 1);
+      renderSectionPills(sections, activeIdx);
+      const progress = Math.min(5 + Math.round((assistantTurns / (totalSections * 2)) * 95), 100);
+      setProgress(progress);
     }
 
     /* ============================================================
        SESSIONS
     ============================================================ */
-    function saveCurrentSession() {
+    async function saveCurrentSession() {
       if (!state.messages.length) return;
-      const session = {
-        id: 'sess-' + Date.now(),
-        mode: state.chatMode,
-        date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-        messages: [...state.messages],
-      };
-      state.sessions.push(session);
+      if (!state.currentSessionId) {
+        state.currentSessionId = 'sess-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
+      }
+      const date = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      try {
+        await fetch('/api/sessions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: state.currentSessionId,
+            mode: state.chatMode,
+            date,
+            messages: state.messages.map(m => ({ role: m.role, content: m.content })),
+          }),
+        });
+      } catch (_) {}
     }
 
-    function loadSession(id) {
-      const s = state.sessions.find(x => x.id === id);
-      if (!s) return;
+    async function loadSession(id) {
       closeDrawer();
+      let s = state.sessions.find(x => x.id === id);
+      if (!s) {
+        try {
+          const res = await fetch('/api/sessions/' + id);
+          if (res.ok) s = await res.json();
+        } catch (_) {}
+      }
+      if (!s) return;
+
       state.chatMode = s.mode;
-      state.messages = [...s.messages];
+      state.messages = s.messages.map(m => ({ role: m.role, content: m.content }));
+      state.currentSessionId = s.id;
 
       const modeLabel = document.getElementById('chat-mode-label');
       const titleEl   = document.getElementById('chat-title');
@@ -1652,12 +1772,12 @@
         modeLabel.textContent = 'Review Mode';
         modeLabel.className = 'chat-mode-label review';
         titleEl.textContent = 'Last Visit Review';
-        renderSectionPills(SOAP_SECTIONS, 3);
+        renderSectionPills(SOAP_SECTIONS, SOAP_SECTIONS.length - 1);
       } else {
         modeLabel.textContent = 'Prepare Mode';
         modeLabel.className = 'chat-mode-label prepare';
         titleEl.textContent = 'Next Visit Preparation';
-        renderSectionPills(PREP_SECTIONS, 3);
+        renderSectionPills(PREP_SECTIONS, PREP_SECTIONS.length - 1);
       }
 
       const body = document.getElementById('chat-body');
@@ -1765,25 +1885,96 @@
       document.getElementById('p-literacy').value    = state.profile.literacy || 'high';
       document.getElementById('p-interpreter').value = state.profile.interpreter || 'no';
       document.getElementById('p-education').value   = state.profile.education || '';
-      document.getElementById('p-model').value       = state.profile.model || 'gpt-5.2';
+      document.getElementById('p-model').value       = state.profile.model_pref || state.profile.model || 'gpt-5.2';
       openModal('modal-profile');
     }
 
-    function saveProfile(e) {
+    async function saveProfile(e) {
       e.preventDefault();
-      state.profile.name        = document.getElementById('p-name').value;
-      state.profile.dob         = document.getElementById('p-dob').value;
-      state.profile.gender      = document.getElementById('p-gender').value;
-      state.profile.language    = document.getElementById('p-language').value;
-      state.profile.literacy    = document.getElementById('p-literacy').value;
-      state.profile.interpreter = document.getElementById('p-interpreter').value;
-      state.profile.education   = document.getElementById('p-education').value;
-      state.profile.model       = document.getElementById('p-model').value;
+      const profileData = {
+        name:        document.getElementById('p-name').value,
+        dob:         document.getElementById('p-dob').value,
+        gender:      document.getElementById('p-gender').value,
+        language:    document.getElementById('p-language').value,
+        literacy:    document.getElementById('p-literacy').value,
+        interpreter: document.getElementById('p-interpreter').value,
+        education:   document.getElementById('p-education').value,
+        model_pref:  document.getElementById('p-model').value,
+      };
+      Object.assign(state.profile, profileData);
+      try {
+        await fetch('/api/profile', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(profileData),
+        });
+      } catch (_) {}
       document.querySelector('#modal-profile .modal-title').textContent = 'Your Profile';
       document.querySelector('#profile-form [type="submit"]').textContent = 'Save Profile';
       closeModal('modal-profile');
       updateLandingPersonalization();
       showToast('Profile saved ✓');
+    }
+
+    /* ============================================================
+       NOTE / RECORD
+    ============================================================ */
+    function openNoteModal() {
+      document.getElementById('note-textarea').value = '';
+      document.getElementById('note-char-count').textContent = '0';
+      openModal('modal-note');
+    }
+
+    function updateNoteCharCount() {
+      const len = document.getElementById('note-textarea').value.length;
+      document.getElementById('note-char-count').textContent = len;
+    }
+
+    async function submitNote() {
+      const text = document.getElementById('note-textarea').value.trim();
+      if (!text) { showToast('Please paste a note first.'); return; }
+      try {
+        const res = await fetch('/api/record', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content: text }),
+        });
+        if (!res.ok) { showToast('Could not save note. Please try again.'); return; }
+        state.patientRecord = { type: 'plaintext', text };
+        state.patientRecordIsDefault = false;
+        updateNoteCard();
+        closeModal('modal-note');
+        showToast('Note saved ✓');
+      } catch (_) {
+        showToast('Could not save note. Please try again.');
+      }
+    }
+
+    async function useDefaultNote() {
+      try {
+        const res = await fetch('/api/record');
+        if (res.ok) {
+          const data = await res.json();
+          state.patientRecord = data.content;
+          state.patientRecordIsDefault = true;
+        }
+      } catch (_) {}
+      updateNoteCard();
+      closeModal('modal-note');
+      showToast('Using demo note ✓');
+    }
+
+    function updateNoteCard() {
+      const label = document.getElementById('note-card-label');
+      const sub = document.getElementById('note-card-sub');
+      if (state.patientRecordIsDefault) {
+        label.textContent = 'Demo Note Active';
+        const visitDate = state.patientRecord?.visitDate;
+        sub.textContent = visitDate ? `Last visit: ${visitDate}` : 'Using built-in demo SOAP note';
+      } else {
+        label.textContent = 'Custom Note Active';
+        sub.textContent = 'Using your pasted visit notes';
+      }
     }
 
     /* ============================================================
@@ -1870,6 +2061,23 @@
       const name = state.profile.name || state.user?.displayName || '';
       return name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0,2) || 'U';
     }
+
+    /* ============================================================
+       PAGE LOAD — restore session if cookie still valid
+    ============================================================ */
+    (async function initApp() {
+      try {
+        const res = await fetch('/api/auth/me');
+        if (res.ok) {
+          const data = await res.json();
+          state.user = { username: data.username, displayName: data.displayName };
+          await enterApp();
+          // Don't open profile onboarding on cookie restore — just go to landing
+        }
+      } catch (_) {
+        // Server not reachable or no session — stay on auth screen
+      }
+    })();
   </script>
 </body>
 </html>

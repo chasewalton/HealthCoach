@@ -1,19 +1,26 @@
 # HealthCoach — Claude Code Instructions
 
 ## Project Overview
-HealthCoach is a patient-facing web app that helps users understand their last clinic visit (SOAP note review) and prepare for their next appointment (structured interview). It is a **single-file static HTML app** — no build step, no framework, no backend. Everything lives in `index.html`.
+HealthCoach is a patient-facing web app that helps users understand their last clinic visit (SOAP note review) and prepare for their next appointment (structured interview). The frontend is a single HTML file (`index.html`); the backend is a Flask app (`app.py`) that serves it and all `/api/*` routes.
 
 ## Architecture
-- **Single file**: `index.html` contains all HTML, CSS, and JavaScript.
-- **No build tooling**: Open in browser directly or serve with any static file server.
-- **No backend**: Auth is mock in-memory, chat responses are scripted flows (not live AI calls yet).
-- **State**: Plain JS object (`state`) — not persisted across page reloads.
-- **Deployment**: Render static site (`render.yaml` at repo root).
+- **Frontend**: `index.html` — all HTML, CSS, and JavaScript. Async `fetch` calls to `/api/*`.
+- **Backend**: `app.py` — Flask app serving `index.html` at `/` and REST endpoints at `/api/*`.
+- **Database**: SQLite at `data/healthcoach.db` — 4 tables: `users`, `profiles`, `records`, `sessions`.
+- **AI**: OpenAI `gpt-4o` via the `openai` Python SDK. API key from `OPENAI_API_KEY` env var.
+- **Auth**: Flask sessions (server-side cookie). Passwords hashed with `bcrypt`.
+- **State**: Plain JS `state` object in-browser; persisted to SQLite via API calls.
+- **Deployment**: Render Python web service with gunicorn (`render.yaml` at repo root).
+- **Default SOAP note**: `data/default_note.json` — used when no user-uploaded note exists.
 
 ## Tech Stack
-- Vanilla HTML/CSS/JS (ES2020+)
+- **Frontend**: Vanilla HTML/CSS/JS (ES2020+)
+- **Backend**: Python 3.11, Flask 3, gunicorn
+- **AI**: openai SDK (gpt-4o)
+- **Auth**: bcrypt, Flask sessions
+- **DB**: sqlite3 (stdlib)
 - Fonts: **Plus Jakarta Sans** (UI) + **Lora** (hero headings) via Google Fonts
-- No npm, no bundler, no dependencies to install
+- No npm, no bundler
 
 ## Design System
 
@@ -36,59 +43,84 @@ HealthCoach is a patient-facing web app that helps users understand their last c
 - Border radii variables: `--radius-sm` (8px) → `--radius-full` (9999px)
 
 ## App Screens
-1. **Auth** (`#screen-auth`) — sign in / register with mock in-memory user DB
-2. **Landing** (`#screen-landing`) — personalized greeting, two mode CTAs, recent chats
-3. **Chat** (`#screen-chat`) — SOAP Review or Next Visit Prep flow with scripted responses
+1. **Auth** (`#screen-auth`) — sign in / register via `/api/auth/register` and `/api/auth/login`
+2. **Landing** (`#screen-landing`) — personalized greeting, two mode CTAs, note card, recent chats
+3. **Chat** (`#screen-chat`) — OpenAI-powered SOAP Review or Next Visit Prep
 
 ## Chat Flows
 
 ### Review Mode (SOAP)
 4 sections: Subjective → Objective → Assessment → Plan
-- `SOAP_SECTIONS` constant, `reviewFlow[]` array, `reviewStep` counter
-- Progress bar advances per section (25% → 50% → 75% → 100%)
+- `SOAP_SECTIONS` constant; section pills + progress advance via `updateProgressHeuristic()`
+- Each turn calls `POST /api/chat` with full message history + patient record
 
 ### Prepare Mode
 4 sections: What Matters → 6-Month Health → Getting It Right → Wrap-Up
-- `PREP_SECTIONS` constant, `prepFlow[]` array, `prepStep` counter
+- `PREP_SECTIONS` constant; same async flow as review mode
 
 ### Emergency Detection
-`processUserInput()` checks for emergency keywords (chest pain, suicidal, etc.) before routing to flow handlers.
+`processUserInput()` checks for emergency keywords (chest pain, suicidal, etc.) **before** making any API call — entirely frontend.
 
 ## Key Modals & UI Components
-- **Profile Modal** (`#modal-profile`) — name, DOB, gender, conditions, medications, AI model preference
+- **Profile Modal** (`#modal-profile`) — name, DOB, gender, literacy, AI model preference; saves to `/api/profile`
+- **Note Modal** (`#modal-note`) — paste custom SOAP note or reset to demo; saves to `/api/record`
 - **Summary Modal** (`#modal-summary`) — structured visit summary; can download as .txt or .json
-- **History Drawer** (`#drawer-history`) — slide-in left drawer listing past sessions
+- **History Drawer** (`#drawer-history`) — slide-in left drawer; sessions fetched from `/api/sessions`
+- **Note Card** (landing screen) — shows "Demo Note Active" or "Custom Note Active"
 
 ## State Object
 ```js
 state = {
-  user: null,           // { username, displayName }
-  profile: {},          // health profile fields
-  chatMode: null,       // 'review' | 'prepare'
-  messages: [],         // { role, content, chips? }[]
-  sessions: [],         // completed sessions (in-memory)
+  user: null,                  // { username, displayName }
+  profile: {},                 // health profile fields (synced from /api/profile)
+  chatMode: null,              // 'review' | 'prepare'
+  messages: [],                // { role, content }[]
+  sessions: [],                // fetched from /api/sessions
   soapSection: 0,
   prepSection: 0,
   isTyping: false,
   authMode: 'signin',
+  patientRecord: null,         // SOAP note object from /api/record
+  patientRecordIsDefault: true,
+  currentSessionId: null,      // UUID for active chat session
 }
 ```
 
+## API Routes (`app.py`)
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/auth/register` | Create account |
+| POST | `/api/auth/login` | Sign in |
+| POST | `/api/auth/logout` | Sign out |
+| GET  | `/api/auth/me` | Current session info |
+| GET  | `/api/profile` | Get profile |
+| PUT  | `/api/profile` | Update profile |
+| GET  | `/api/record` | Get SOAP note (custom or default) |
+| POST | `/api/record` | Upload custom note |
+| POST | `/api/chat` | OpenAI chat completion |
+| GET  | `/api/sessions` | List sessions |
+| POST | `/api/sessions` | Save/update session |
+| GET  | `/api/sessions/<id>` | Get single session |
+
 ## Development
 ```bash
-# Serve locally (any of these work)
-open index.html
-python3 -m http.server 8080
-npx serve .
+# Install dependencies
+pip install -r requirements.txt
+
+# Run Flask backend (serves index.html + API)
+python app.py
+# Open http://localhost:5000
+
+# Set env vars for full functionality
+export OPENAI_API_KEY=sk-...
+export FLASK_SECRET_KEY=your-secret
 ```
 
-No install step needed.
-
 ## Deployment (Render)
-Configured via `render.yaml`. The site deploys as a **Render Static Site**.
+Configured via `render.yaml`. The site deploys as a **Render Python web service** using gunicorn.
 - Service name: `healthcoach-ai-bidmc` → URL: `healthcoach-ai-bidmc.onrender.com`
-- Publish directory: `.` (repo root, serves `index.html`)
-- No build command required
+- Set `OPENAI_API_KEY` manually in Render dashboard (not in `render.yaml`)
+- Persistent disk at `/opt/render/project/src/data` (requires paid plan; free tier uses ephemeral storage)
 
 > Note: Render free-tier URLs follow `{service-name}.onrender.com`. Custom domains
 > under `render.com` are not supported — only `onrender.com` subdomains or
