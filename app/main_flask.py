@@ -55,19 +55,23 @@ def ui():
 
 @app.post("/chat")
 def chat():
-    data = request.get_json(force=True)
-    req = ChatRequest(**data)
-    messages = [m.model_dump() for m in req.messages]
-    client = get_client_for(getattr(req, "provider", "") or "", getattr(req, "model", "") or "")
-    reply_text = get_next_reply(
-        client,
-        messages,
-        language=req.language,
-        mode=getattr(req, "mode", None),
-        review_record=(data.get("review_record") or None),
-    )
-    resp = ChatResponse(reply=reply_text)
-    return jsonify(resp.model_dump())
+    try:
+        data = request.get_json(force=True)
+        req = ChatRequest(**data)
+        messages = [m.model_dump() for m in req.messages]
+        client = get_client_for(getattr(req, "provider", "") or "", getattr(req, "model", "") or "")
+        reply_text = get_next_reply(
+            client,
+            messages,
+            language=req.language,
+            mode=getattr(req, "mode", None),
+            review_record=(data.get("review_record") or None),
+        )
+        resp = ChatResponse(reply=reply_text)
+        return jsonify(resp.model_dump())
+    except Exception as e:
+        print(f"[error] /chat: {type(e).__name__}: {e}")
+        return jsonify({"error": str(e)}), 500
 
 
 @app.post("/summarize")

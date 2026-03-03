@@ -385,7 +385,7 @@ async function sendDirect(text) {
     const data = await apiPost("/chat", payload);
     messages.push({ role: "assistant", content: data.reply });
   } catch (e) {
-    messages.push({ role: "assistant", content: "Sorry—server error. Please try again." });
+    messages.push({ role: "assistant", content: `Sorry—server error. (${e.message})` });
   } finally {
     sendBtn.disabled = false;
     renderMessages();
@@ -399,7 +399,11 @@ async function apiPost(path, body) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  if (!res.ok) {
+    let detail = "";
+    try { detail = await res.text(); } catch {}
+    throw new Error(`HTTP ${res.status}: ${detail}`);
+  }
   return res.json();
 }
 
@@ -687,7 +691,7 @@ async function startReviewConversation() {
     chatStarted = true;
     try { await saveTranscriptServer(); } catch {}
   } catch (e) {
-    messages.push({ role: "assistant", content: "Sorry—server error starting review." });
+    messages.push({ role: "assistant", content: `Sorry—server error starting review. (${e.message})` });
     renderMessages();
   }
 }
@@ -735,7 +739,7 @@ async function sendMessage() {
     const data = await apiPost("/chat", payload);
     messages.push({ role: "assistant", content: data.reply });
   } catch (e) {
-    messages.push({ role: "assistant", content: "Sorry—server error. Please try again." });
+    messages.push({ role: "assistant", content: `Sorry—server error. (${e.message})` });
   } finally {
     sendBtn.disabled = false;
     renderMessages();
