@@ -7,17 +7,13 @@ from app.prompts import (
     SURVEY_CONDUCTOR_PROMPT,
     REVIEW_SOAP_PROMPT,
     REVIEW_FAKE_LAST_RECORD,
-    CONTEXT_DEMOGRAPHICS_COLLECTED,
-    CONTEXT_BEGIN_SECTION_1,
-    CONTEXT_ALREADY_ASKED_PREFIX,
-    FALLBACK_SURVEY,
-    FALLBACK_REVIEW,
+    CONTEXT_PATIENT_LABEL,
+    CONTEXT_ALREADY_ASKED_LABEL,
 )
 
 # Tokens per mode — generous enough for a question + markers + brief context
 MAX_TOKENS_OURDX = 350
-MAX_TOKENS_REVIEW = 500
-
+MAX_TOKENS_REVIEW = 350
 
 def get_next_reply(
     llama: ChatClient,
@@ -43,13 +39,7 @@ def get_next_reply(
             survey_system += f"\n\nRespond in: {language}"
         system_prompt = survey_system
 
-    # Dynamic context — instructions from prompts, values from runtime
-    extra: List[str] = []
-    if system_context_parts:
-        extra.append(CONTEXT_DEMOGRAPHICS_COLLECTED)
-        if use_mode != "review":
-            extra.append(CONTEXT_BEGIN_SECTION_1)
-
+    # Inject runtime context (instructions are in prompts; we only add values)
     prior_questions: List[str] = []
     for m in messages:
         if m.get("role") != "assistant":
@@ -60,17 +50,20 @@ def get_next_reply(
         first = re.split(r"(?<=[.?!])\s+", text, maxsplit=1)[0].strip()
         if first:
             prior_questions.append(first)
-    if prior_questions:
-        recent = prior_questions[-8:]
-        extra.append(f"{CONTEXT_ALREADY_ASKED_PREFIX} " + " | ".join(recent))
 
     system_content = system_prompt
     if system_context_parts:
-        system_content = f"{system_prompt}\n\nPatient context:\n" + "\n".join(s.strip() for s in system_context_parts if s.strip())
-    if extra:
-        system_content = f"{system_content}\n\nContext:\n" + "\n".join(f"- {e}" for e in extra)
+        patient_text = "\n".join(s.strip() for s in system_context_parts if s.strip())
+        system_content = f"{system_prompt}\n\n{CONTEXT_PATIENT_LABEL}\n{patient_text}"
+    if prior_questions:
+        recent = prior_questions[-8:]
+        system_content = f"{system_content}\n\n{CONTEXT_ALREADY_ASKED_LABEL} " + " | ".join(recent)
     model_messages: List[Dict[str, str]] = [{"role": "system", "content": system_content}]
-    model_messages.extend([m for m in messages if m.get("role") != "system"])
+    conv_messages = [m for m in messages if m.get("role") != "system"]
+    # When conversation is empty (ourdx), inject starter so model can send intro + ready check
+    if use_mode != "review" and not any(m.get("role") == "user" for m in conv_messages):
+        conv_messages = [{"role": "user", "content": "Hi"}]
+    model_messages.extend(conv_messages)
 
     max_tokens = MAX_TOKENS_REVIEW if use_mode == "review" else MAX_TOKENS_OURDX
     reply = llama.generate(model_messages, max_tokens=max_tokens, temperature=0.2)
@@ -142,10 +135,5 @@ def _clean(text: str, use_mode: str) -> str:
         # Default to subjective if model forgot the marker
         if not re.search(r"\[SOAP:", out, flags=re.I):
             out = f"{out}\n[SOAP:subjective]"
-
-    # Fallback if the body came back empty
-    body_only = re.sub(marker_pattern, "", out, flags=re.I).strip()
-    if not body_only:
-        out = FALLBACK_REVIEW if use_mode == "review" else FALLBACK_SURVEY
 
     return out.strip()
