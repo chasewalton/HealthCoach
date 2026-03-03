@@ -47,6 +47,7 @@ def _write_accounts(accounts: dict) -> None:
 def register_user(username: str, password: str, display_name: str = "") -> Tuple[bool, Optional[str]]:
     """Register a new user. Returns (True, None) on success or (False, error_msg)."""
     username = (username or "").strip().lower()
+    password = (password or "").strip()
     if not username:
         return False, "Username is required"
     if len(username) < 3:
@@ -79,13 +80,20 @@ def register_user(username: str, password: str, display_name: str = "") -> Tuple
 def verify_user(username: str, password: str) -> bool:
     """Return True if the username/password pair is valid."""
     username = (username or "").strip().lower()
+    password = (password or "").strip()
+    if not password:
+        return False
     accounts = _read_accounts()
     entry = accounts.get(username)
     if not entry:
         return False
     stored_hash = entry.get("password_hash", "")
+    if not stored_hash or not stored_hash.startswith(("$2a$", "$2b$")):
+        return False
     try:
-        return bcrypt.checkpw(password.encode("utf-8"), stored_hash.encode("utf-8"))
+        pwd_bytes = password.encode("utf-8")
+        hash_bytes = stored_hash.encode("utf-8") if isinstance(stored_hash, str) else stored_hash
+        return bcrypt.checkpw(pwd_bytes, hash_bytes)
     except Exception:
         return False
 

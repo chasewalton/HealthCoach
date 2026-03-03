@@ -1461,7 +1461,7 @@ async function initApp() {
 
 async function doLogin() {
   const username = (document.getElementById("auth-username")?.value || "").trim();
-  const password = document.getElementById("auth-password")?.value || "";
+  const password = (document.getElementById("auth-password")?.value || "").trim();
   const errorEl = document.getElementById("auth-error");
   if (errorEl) errorEl.textContent = "";
   try {
@@ -1484,8 +1484,8 @@ async function doLogin() {
 async function doRegister() {
   const displayName = (document.getElementById("reg-display-name")?.value || "").trim();
   const username = (document.getElementById("reg-username")?.value || "").trim();
-  const password = document.getElementById("reg-password")?.value || "";
-  const confirm = document.getElementById("reg-confirm")?.value || "";
+  const password = (document.getElementById("reg-password")?.value || "").trim();
+  const confirm = (document.getElementById("reg-confirm")?.value || "").trim();
   const errorEl = document.getElementById("reg-error");
   if (errorEl) errorEl.textContent = "";
   if (password !== confirm) {

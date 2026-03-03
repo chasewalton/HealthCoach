@@ -60,9 +60,10 @@ def get_next_reply(
         system_content = f"{system_content}\n\n{CONTEXT_ALREADY_ASKED_LABEL} " + " | ".join(recent)
     model_messages: List[Dict[str, str]] = [{"role": "system", "content": system_content}]
     conv_messages = [m for m in messages if m.get("role") != "system"]
-    # When conversation is empty (ourdx), inject starter so model can send intro + ready check
-    if use_mode != "review" and not any(m.get("role") == "user" for m in conv_messages):
-        conv_messages = [{"role": "user", "content": "Hi"}]
+    # When conversation is empty, inject starter so model initiates first
+    if not any(m.get("role") == "user" for m in conv_messages):
+        starter = "Hi" if use_mode != "review" else "I'd like to review my last visit."
+        conv_messages = [{"role": "user", "content": starter}]
     model_messages.extend(conv_messages)
 
     max_tokens = MAX_TOKENS_REVIEW if use_mode == "review" else MAX_TOKENS_OURDX
