@@ -17,17 +17,20 @@ class ChatClient(Protocol):
 
 
 class LlamaClient:
+    _session: Optional[requests.Session] = None
+
     def __init__(self) -> None:
         self.base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
         self.model = os.getenv("OLLAMA_MODEL", "llama3:instruct")
-        # If true, send system instructions via top-level `system` field (Ollama supports this),
-        # removing system-role messages from the chat history to avoid duplication.
         self.use_system_field = str(os.getenv("OLLAMA_USE_SYSTEM_FIELD", "0")).lower() in {
-            "1",
-            "true",
-            "yes",
-            "on",
+            "1", "true", "yes", "on",
         }
+
+    @property
+    def _http(self) -> requests.Session:
+        if LlamaClient._session is None:
+            LlamaClient._session = requests.Session()
+        return LlamaClient._session
 
     def generate(
         self,
@@ -41,25 +44,22 @@ class LlamaClient:
         options: Dict[str, Any] = {"num_predict": max_tokens, "temperature": temperature}
         if extra_options:
             options.update(extra_options)
-        # Optionally move system-role messages into top-level `system`
         system_parts = [m.get("content", "") for m in messages if m.get("role") == "system"]
-        non_system_messages = [m for m in messages if m.get("role") != "system"]
+        non_system = [m for m in messages if m.get("role") != "system"]
 
         payload: Dict[str, Any] = {
             "model": self.model,
-            "messages": non_system_messages if (self.use_system_field and system_parts) else messages,
+            "messages": non_system if (self.use_system_field and system_parts) else messages,
             "stream": False,
             "options": options,
         }
         if self.use_system_field and system_parts:
-            payload["system"] = "\n\n".join([s for s in system_parts if s])
+            payload["system"] = "\n\n".join(s for s in system_parts if s)
         if format_json:
-            # Ollama supports `"format": "json"` to return well-formed JSON
             payload["format"] = "json"
-        resp = requests.post(f"{self.base_url}/api/chat", json=payload, timeout=120)
+        resp = self._http.post(f"{self.base_url}/api/chat", json=payload, timeout=120)
         resp.raise_for_status()
-        data = resp.json()
-        return data["message"]["content"]
+        return resp.json()["message"]["content"]
 
 
 class OpenAIClient:

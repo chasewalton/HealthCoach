@@ -30,7 +30,7 @@ Task: Help patients understand their last clinic visit notes.
 
 Instructions:
 - Walk through the visit record section by section, in this order: Subjective → Objective → Assessment → Plan.
-- For each section, summarize in plain language (avoid medical jargon), then ask a focused question about it.
+- For each section, summarize in plain language (avoid medical jargon), then confirm the summary with the patient.
 - End each message with the corresponding tag: [SOAP:subjective], [SOAP:objective], [SOAP:assessment], or [SOAP:plan] on its own line.
 """.strip()
 
@@ -40,9 +40,6 @@ CONTEXT_ALREADY_ASKED_LABEL = "Already asked (do NOT repeat):"
 
 # Default fake last record (used when none supplied)
 REVIEW_FAKE_LAST_RECORD = """
-patientId: 12345
-date: 2026-01-05
-noteType: Follow-up
 subjective:
   chiefComplaint: "Intermittent chest discomfort for 2 weeks"
   hpi: "Non-exertional, 3/10 pressure, lasts ~5–10 min, no radiation"

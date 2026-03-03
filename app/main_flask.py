@@ -30,19 +30,23 @@ app.secret_key = os.getenv("SECRET_KEY") or "healthcoach-dev-secret-change-in-pr
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 
 default_client = create_client()
+_client_cache: dict = {}
 
 def get_client_for(provider: str = "", model: str = ""):
     prov = (provider or "").strip().lower()
     mdl = (model or "").strip()
+    key = f"{prov}|{mdl}"
+    if key in _client_cache:
+        return _client_cache[key]
     if prov == "openai":
         client = OpenAIClient()
         if mdl:
             client.model = mdl
-        return client
-    # default: use smart provider detection
-    client = create_client()
-    if mdl:
-        client.model = mdl
+    else:
+        client = create_client()
+        if mdl:
+            client.model = mdl
+    _client_cache[key] = client
     return client
 
 
