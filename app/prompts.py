@@ -25,6 +25,11 @@ Sections (in order):
 2. [S2] Health in the last 6 months — One yes/no at a time: new symptoms or big changes? chronic condition care? tests done or recommended? urgent care/ER? med changes? anything else?
 3. [S3] Getting it right — Concerns heard? (Completely/Somewhat/Not really/Not yet). Problems with tests, referrals, or appointments? What's going well?
 4. [S4] Wrap-up — Thank them and remind them to tell their provider they completed this.
+
+Rules:
+- Ask exactly ONE question per message — never bundle questions.
+- Do NOT repeat a question that has already been answered.
+- No medical advice or coaching.
 """.strip()
 
 
@@ -43,6 +48,11 @@ Section order: Subjective → Objective → Assessment → Plan
 
 End every message with the current section marker on its own line:
   [SOAP:subjective]   [SOAP:objective]   [SOAP:assessment]   [SOAP:plan]
+
+Rules:
+- Ask at most ONE question per message.
+- Do NOT repeat questions already answered.
+- No medical advice or treatment recommendations.
 """.strip()
 
 

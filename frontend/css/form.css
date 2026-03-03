@@ -1,46 +1,51 @@
-/* Demographics form and grouped form */
+/* Demographics form — clean, grouped */
 #demographics-form h2 { display: none; }
 #demographics-form p {
-  color: var(--subtext);
+  color: var(--color-subtext);
   margin: 0 0 var(--space-5);
 }
-.grouped-form { margin-top: var(--space-3); }
+.grouped-form { margin-top: var(--space-4); }
 .grouped-form#demographics-form {
-  max-width: 640px;
-  margin: 24px auto;
+  max-width: 480px;
+  margin: 32px auto;
+  padding: 0 24px;
 }
-.page-header { margin-bottom: var(--space-5); text-align: center; }
+.page-header { margin-bottom: var(--space-6); text-align: center; }
 .page-title {
-  font-size: var(--font-size-title);
-  font-weight: var(--font-weight-semibold);
-  margin: 0 0 var(--space-1);
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin: 0 0 var(--space-2);
+  color: var(--color-text);
 }
-.page-subtitle { margin: 0; color: var(--color-subtext); font-size: 14px; }
-.page-note { margin: var(--space-2) 0 0; color: var(--color-subtext); font-size: 12px; }
+.page-subtitle { margin: 0; color: var(--color-subtext); font-size: 15px; }
+.page-note { margin: var(--space-2) 0 0; color: var(--color-subtext); font-size: 13px; }
 
 .group {
   background: var(--color-surface);
   border: var(--border-1);
   border-radius: var(--radius-tile);
-  margin-bottom: var(--space-5);
+  margin-bottom: var(--space-4);
   overflow: hidden;
 }
 .group-title {
   font-size: 13px;
-  font-weight: var(--font-weight-medium);
+  font-weight: 600;
   color: var(--color-subtext);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
   padding: var(--space-3) var(--space-4) var(--space-2);
 }
 .row {
   display: flex;
   align-items: center;
   gap: var(--space-4);
-  min-height: 56px;
+  min-height: 52px;
   padding: var(--space-3) var(--space-4);
   border-bottom: var(--border-1);
 }
 .group .row:last-child { border-bottom: none; }
-.row-label { flex: 0 0 42%; color: var(--color-text); font-weight: var(--font-weight-medium); }
+.row-label { flex: 0 0 38%; color: var(--color-text); font-weight: 500; font-size: 15px; }
 .row-control {
   flex: 1 1 auto;
   display: flex;
@@ -134,23 +139,30 @@ input[type="text"],
 input[type="date"],
 select {
   width: 100%;
-  padding: 8px 12px;
+  padding: 10px 14px;
   border: var(--border-1);
   border-radius: var(--radius-field);
-  background: #fff;
-  color: var(--text);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 15px;
   outline: none;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 input[type="text"]:focus,
 select:focus {
-  border-color: #d1d5db;
-  box-shadow: 0 0 0 4px var(--color-focus);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--color-focus);
 }
-input::placeholder { color: #9aa3ae; }
+input::placeholder { color: var(--color-subtext); }
 
 #demographics-form > div:last-of-type { margin-top: var(--space-6); }
-.form-actions { display: flex; justify-content: flex-end; gap: var(--space-3); }
+.form-actions { display: flex; justify-content: stretch; gap: var(--space-3); }
+
+#start-chat-btn {
+  flex: 1;
+  max-width: 200px;
+  margin: 0 auto;
+}
 
 /* Segmented fallback (mobile) */
 @media (max-width: 420px) {

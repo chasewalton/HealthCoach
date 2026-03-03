@@ -33,28 +33,13 @@ def get_next_reply(
             survey_system += f"\n\nRespond in: {language}"
         system_prompt = survey_system
 
-    # Build hard constraints
-    if use_mode == "review":
-        constraints: List[str] = [
-            "Ask at most ONE question per message.",
-            "Do NOT repeat questions already answered.",
-            "Always end your message with the current [SOAP:section] marker on its own line.",
-            "No medical advice or treatment recommendations.",
-        ]
-    else:
-        constraints = [
-            "Ask exactly ONE question per message — never bundle questions.",
-            "Always append the section marker ([S1]–[S4]) on its own line after your question.",
-            "Do NOT repeat a question that has already been answered.",
-            "No medical advice or coaching.",
-        ]
-
+    # Dynamic context (cannot live in prompts.py)
+    extra: List[str] = []
     if system_context_parts:
-        constraints.append("Patient demographics and context are already collected — do NOT ask about name, age, language, education, or who this is about.")
+        extra.append("Patient demographics and context are already collected — do NOT ask about name, age, language, education, or who this is about.")
         if use_mode != "review":
-            constraints.append("Begin directly with Section 1.")
+            extra.append("Begin directly with Section 1.")
 
-    # Inject recent assistant turns so the model knows what was already asked
     prior_questions: List[str] = []
     for m in messages:
         if m.get("role") != "assistant":
@@ -62,18 +47,17 @@ def get_next_reply(
         text = (m.get("content") or "").strip()
         if not text:
             continue
-        # First sentence is the question
         first = re.split(r"(?<=[.?!])\s+", text, maxsplit=1)[0].strip()
         if first:
             prior_questions.append(first)
     if prior_questions:
         recent = prior_questions[-8:]
-        constraints.append("Already asked (do NOT repeat): " + " | ".join(recent))
+        extra.append("Already asked (do NOT repeat): " + " | ".join(recent))
 
-    hard_constraints = "HARD CONSTRAINTS:\n" + "\n".join(f"- {c}" for c in constraints)
-
-    combined_system = f"{system_prompt}\n\n{hard_constraints}"
-    model_messages: List[Dict[str, str]] = [{"role": "system", "content": combined_system}]
+    system_content = system_prompt
+    if extra:
+        system_content = f"{system_prompt}\n\nContext:\n" + "\n".join(f"- {e}" for e in extra)
+    model_messages: List[Dict[str, str]] = [{"role": "system", "content": system_content}]
     model_messages.extend([m for m in messages if m.get("role") != "system"])
 
     max_tokens = MAX_TOKENS_REVIEW if use_mode == "review" else MAX_TOKENS_OURDX

@@ -1,26 +1,44 @@
 /* History drawer */
 .drawer { position: fixed; inset: 0; display: none; z-index: 9500; }
 .drawer[aria-hidden="false"] { display: block; }
-.drawer-backdrop { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.35); }
+.drawer-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+}
 .drawer-panel {
   position: absolute;
-  top: 0; right: 0;
+  top: 0;
+  right: 0;
   height: 100%;
-  width: min(360px, 90vw);
+  width: min(340px, 90vw);
   background: var(--color-surface);
   border-left: var(--border-1);
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.12);
+  box-shadow: -4px 0 24px rgba(0, 0, 0, 0.08);
   display: flex;
   flex-direction: column;
 }
-.drawer-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: var(--border-1); }
-.drawer-title { font-weight: var(--font-weight-semibold); }
-.drawer-body { padding: 10px 10px 16px; overflow: auto; }
+.drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 20px 16px;
+  border-bottom: var(--border-1);
+}
+.drawer-title {
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+.drawer-body { padding: 16px; overflow: auto; }
 .history-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
 .history-list li {
   border: var(--border-1);
-  border-radius: 12px;
-  padding: 10px 12px;
+  border-radius: var(--radius-field);
+  padding: 14px 16px;
   cursor: pointer;
+  font-size: 15px;
+  transition: background 0.15s ease;
 }
-.history-list li:hover { background: #f9fafb; }
+.history-list li:hover { background: var(--color-fill-muted); }

@@ -7,14 +7,24 @@
 .action-card {
   text-align: left;
   padding: 20px;
-  border-radius: 16px;
+  border-radius: var(--radius-tile);
   border: var(--border-1);
   background: var(--color-surface);
-  box-shadow: var(--shadow-none);
   cursor: pointer;
-  transition: transform 80ms ease, background 150ms ease;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
 }
-.action-card:hover { background: #f9fafb; transform: translateY(-1px); }
+.action-card:hover {
+  background: var(--color-surface);
+  border-color: var(--color-subtext);
+  transform: scale(1.01);
+}
+.action-card.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.action-card.primary:hover { opacity: 0.95; }
+.action-card .action-sub { color: inherit; opacity: 0.85; }
 .action-card:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 2px; }
 .action-title { font-weight: 600; margin-bottom: 6px; }
 .action-sub { color: var(--subtext); font-size: 13px; }

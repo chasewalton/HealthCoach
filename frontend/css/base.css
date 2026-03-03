@@ -1,25 +1,25 @@
-/* Base variables, resets, typography, shared elements */
+/* Base variables — Apple-inspired design system */
 :root {
-  --color-bg: #f7f8fa;
+  --color-bg: #f5f5f7;
   --color-surface: #ffffff;
-  --color-text: #111827;
-  --color-subtext: #6b7280;
-  --color-border: #e5e7eb;
-  --color-fill-muted: #f3f4f6;
-  --color-focus: rgba(17, 24, 39, 0.1);
-  --color-accent-semantic: #e14848;
+  --color-text: #1d1d1f;
+  --color-subtext: #86868b;
+  --color-border: #d2d2d7;
+  --color-fill-muted: #f5f5f7;
+  --color-focus: rgba(0, 122, 255, 0.15);
+  --color-accent-semantic: #ff3b30;
 
-  --ask-grad-top: #fff5f4;
-  --ask-grad-btm: #fff8f1;
-  --ask-max: 1140px;
+  --ask-grad-top: #fbfbfd;
+  --ask-grad-btm: #f5f5f7;
+  --ask-max: 680px;
 
-  --font-sans: ui-sans-serif, -apple-system, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial;
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
   --font-size-body: 15px;
   --font-size-title: clamp(24px, 3vw, 28px);
   --font-weight-regular: 400;
   --font-weight-medium: 500;
   --font-weight-semibold: 600;
-  --line-height: 1.55;
+  --line-height: 1.47;
 
   --space-1: 4px;
   --space-2: 8px;
@@ -31,26 +31,26 @@
   --space-8: 32px;
 
   --radius-chip: 999px;
-  --radius-field: 12px;
-  --radius-tile: 16px;
+  --radius-field: 10px;
+  --radius-tile: 12px;
 
   --border-1: 1px solid var(--color-border);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.08);
   --shadow-none: none;
-  --shadow-hairline: 0 1px 0 rgba(0, 0, 0, 0.02);
 
-  --accent: #0a84ff;
+  --accent: #007aff;
 
-  --chat-max: 980px;
-  --chat-pad-x: 24px;
-  --composer-max: 980px;
+  --chat-max: 680px;
+  --chat-pad-x: 20px;
+  --composer-max: 680px;
   --topbar-action-w: 64px;
 
-  /* Fixed layout heights */
-  --topbar-h: 50px;
+  --topbar-h: 52px;
   --progress-h: 0px;
-  --composer-h: 60px;
+  --composer-h: 56px;
 
-  /* Back-compat */
   --bg: var(--color-bg);
   --card: var(--color-surface);
   --text: var(--color-text);
@@ -123,21 +123,22 @@ label > div:first-child { margin-bottom: var(--space-2); font-weight: 500; }
 #start-chat-btn,
 #summarize-btn {
   appearance: none;
-  border: var(--border-1);
-  background: #fff;
-  color: #1f2937;
-  padding: 12px 18px;
-  border-radius: 999px;
-  font-weight: 500;
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  padding: 0 24px;
+  border-radius: var(--radius-field);
+  font-size: 16px;
+  font-weight: 600;
   cursor: pointer;
-  transition: background 0.15s ease, transform 0.05s ease, opacity 0.15s ease;
-  min-height: 40px;
-  box-shadow: var(--shadow-none);
+  transition: opacity 0.2s ease, transform 0.1s ease;
+  min-height: 44px;
 }
 #start-chat-btn:hover,
-#summarize-btn:hover { background: #f8fafc; }
+#summarize-btn:hover { opacity: 0.9; }
 #start-chat-btn:active,
-#summarize-btn:active { transform: translateY(1px); }
+#summarize-btn:active { transform: scale(0.98); }
+#start-chat-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 /* Generic copy */
 #app > p {

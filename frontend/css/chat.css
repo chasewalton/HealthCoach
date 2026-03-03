@@ -100,13 +100,15 @@
 .message { display: flex; margin: 12px 0; animation: bubble-in 200ms ease-out forwards; }
 .message.user { justify-content: flex-end; }
 .message.assistant { justify-content: flex-start; }
-.bubble { max-width: 72ch; font-size: 14px; line-height: 1.6; color: var(--text); }
+.bubble { max-width: 72ch; font-size: 15px; line-height: 1.5; color: var(--color-text); }
 .message.assistant .bubble { width: 100%; padding: 0; background: transparent; }
 .message.user .bubble {
-  padding: 10px 14px;
-  background: #f3f4f6;
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  border-radius: 16px;
+  padding: 12px 16px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 18px;
+  border-bottom-right-radius: 6px;
 }
 
 /* Fixed composer */
@@ -118,72 +120,75 @@
   z-index: 80;
   width: min(var(--composer-max), 100%);
   min-height: var(--composer-h);
-  padding: 12px var(--chat-pad-x) 16px;
+  padding: 10px var(--chat-pad-x) 16px;
   display: grid;
-  grid-template-columns: 1fr auto auto auto;
+  grid-template-columns: 1fr auto auto;
   align-items: center;
   gap: 10px;
-  background: #fff;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border-top: 1px solid var(--color-border);
   padding-bottom: max(16px, env(safe-area-inset-bottom, 0));
   box-sizing: border-box;
 }
-@supports (padding-bottom: env(safe-area-inset-bottom)) {
-#input-row {
-  background: #fff;
-  border-top: 1px solid var(--color-border);
-}
-#input-row:focus-within { transform: translateX(-50%) scale(1.01); }
+#input-row:focus-within { transform: translateX(-50%); }
 #input {
   width: 100%;
   resize: none;
-  min-height: 46px;
+  min-height: 44px;
   max-height: 160px;
-  line-height: 1.35;
-  background: #f7f7f8;
+  line-height: 1.4;
+  font-size: 16px;
+  background: var(--color-fill-muted);
   border: 1px solid var(--color-border);
-  border-radius: 999px;
-  padding: 12px 16px;
+  border-radius: 22px;
+  padding: 10px 18px;
   outline: none;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
-#input:focus { border-color: var(--accent); box-shadow: 0 0 0 4px rgba(10, 132, 255, 0.08); }
+#input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--color-focus);
+}
 #send-btn {
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   padding: 0;
   border: 0;
   border-radius: 999px;
   display: inline-grid;
   place-items: center;
   cursor: pointer;
-  background: #111;
+  background: var(--accent);
   color: #fff;
   line-height: 0;
   user-select: none;
-  transition: transform 0.08s ease, background-color 0.15s ease, opacity 0.15s ease;
+  transition: opacity 0.2s ease, transform 0.1s ease;
   font-weight: 600;
 }
-#send-btn:hover { background: #1a1a1a; }
+#send-btn:hover { opacity: 0.9; }
 #send-btn:active { transform: scale(0.96); }
-#send-btn:focus-visible { outline: 2px solid #5aa7ff; outline-offset: 2px; }
+#send-btn:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 2px; }
 #send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-#send-btn svg { width: 18px; height: 18px; display: block; fill: currentColor; }
+#send-btn svg { width: 20px; height: 20px; display: block; fill: currentColor; }
 
 #summarize-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 8px 12px;
+  padding: 0 16px;
   height: 36px;
-  min-width: 96px;
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  border-radius: 999px;
-  background: #fff;
-  color: var(--text);
+  min-width: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-field);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 15px;
   font-weight: 600;
   cursor: pointer;
 }
-#summarize-btn:hover { border-color: rgba(0, 0, 0, 0.1); background: rgba(0, 0, 0, 0.02); }
+#summarize-btn:hover { background: var(--color-fill-muted); }
 
 #step { font-size: 12px; color: var(--subtext) !important; margin-bottom: 6px !important; }
 
@@ -205,8 +210,7 @@
   padding: 8px 10px;     /* slightly tighter */
 }
 
-/* Optional: make the grid explicitly shrink-safe */
+/* Grid shrink-safe for narrow widths */
 #input-row {
   grid-template-columns: minmax(0, 1fr) auto auto;
-}
 }
