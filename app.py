@@ -298,7 +298,7 @@ def upload_record():
 # CHAT
 # ============================================================
 MODEL_MAP = {
-    'gpt-5.2':  'openai/gpt-4o',
+    'gpt-5.2':  'openai/gpt-5.2-2025-12-11',
     'gpt-4o':   'openai/gpt-4o',
     'claude-3': 'anthropic/claude-3-5-sonnet',
 }
