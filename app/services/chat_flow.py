@@ -1,8 +1,18 @@
 # app/services/chat_flow.py
+"""Combines prompts with runtime context, calls LLM, extracts/cleans markers. All instructions live in prompts.py."""
 from typing import List, Dict, Optional
 import re
 from ..llm_client import ChatClient
-from app.prompts import SURVEY_CONDUCTOR_PROMPT, REVIEW_SOAP_PROMPT, REVIEW_FAKE_LAST_RECORD
+from app.prompts import (
+    SURVEY_CONDUCTOR_PROMPT,
+    REVIEW_SOAP_PROMPT,
+    REVIEW_FAKE_LAST_RECORD,
+    CONTEXT_DEMOGRAPHICS_COLLECTED,
+    CONTEXT_BEGIN_SECTION_1,
+    CONTEXT_ALREADY_ASKED_PREFIX,
+    FALLBACK_SURVEY,
+    FALLBACK_REVIEW,
+)
 
 # Tokens per mode — generous enough for a question + markers + brief context
 MAX_TOKENS_OURDX = 350
@@ -33,12 +43,12 @@ def get_next_reply(
             survey_system += f"\n\nRespond in: {language}"
         system_prompt = survey_system
 
-    # Dynamic context (cannot live in prompts.py)
+    # Dynamic context — instructions from prompts, values from runtime
     extra: List[str] = []
     if system_context_parts:
-        extra.append("Patient demographics and context are already collected — do NOT ask about name, age, language, education, or who this is about.")
+        extra.append(CONTEXT_DEMOGRAPHICS_COLLECTED)
         if use_mode != "review":
-            extra.append("Begin directly with Section 1.")
+            extra.append(CONTEXT_BEGIN_SECTION_1)
 
     prior_questions: List[str] = []
     for m in messages:
@@ -52,11 +62,13 @@ def get_next_reply(
             prior_questions.append(first)
     if prior_questions:
         recent = prior_questions[-8:]
-        extra.append("Already asked (do NOT repeat): " + " | ".join(recent))
+        extra.append(f"{CONTEXT_ALREADY_ASKED_PREFIX} " + " | ".join(recent))
 
     system_content = system_prompt
+    if system_context_parts:
+        system_content = f"{system_prompt}\n\nPatient context:\n" + "\n".join(s.strip() for s in system_context_parts if s.strip())
     if extra:
-        system_content = f"{system_prompt}\n\nContext:\n" + "\n".join(f"- {e}" for e in extra)
+        system_content = f"{system_content}\n\nContext:\n" + "\n".join(f"- {e}" for e in extra)
     model_messages: List[Dict[str, str]] = [{"role": "system", "content": system_content}]
     model_messages.extend([m for m in messages if m.get("role") != "system"])
 
@@ -134,9 +146,6 @@ def _clean(text: str, use_mode: str) -> str:
     # Fallback if the body came back empty
     body_only = re.sub(marker_pattern, "", out, flags=re.I).strip()
     if not body_only:
-        if use_mode == "review":
-            out = "Has anything changed since your last visit on 2026-01-05?\n[SOAP:subjective]"
-        else:
-            out = "What are the most important things you want to talk about at your visit?\n[S1]"
+        out = FALLBACK_REVIEW if use_mode == "review" else FALLBACK_SURVEY
 
     return out.strip()
