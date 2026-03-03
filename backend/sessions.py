@@ -1,6 +1,3 @@
-"""
-Sessions blueprint: /api/sessions
-"""
 import json
 import uuid
 from datetime import datetime

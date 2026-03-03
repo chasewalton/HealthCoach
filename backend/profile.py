@@ -1,6 +1,3 @@
-"""
-Profile blueprint: /api/profile
-"""
 from flask import Blueprint, request, session, jsonify
 
 from backend.db import get_db, require_auth
@@ -35,7 +32,9 @@ def update_profile():
                     list(updates.values()) + [uid]
                 )
         else:
-            conn.execute('INSERT INTO profiles (user_id) VALUES (?)', (uid,))
+            conn.execute(
+                'INSERT INTO profiles (user_id) VALUES (?)', (uid,)
+            )
             if updates:
                 set_clause = ', '.join(f'{k}=?' for k in updates)
                 conn.execute(

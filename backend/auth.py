@@ -1,9 +1,6 @@
-"""
-Auth blueprint: /api/auth/*
-"""
+import bcrypt
 import sqlite3
 
-import bcrypt
 from flask import Blueprint, request, session, jsonify
 
 from backend.db import get_db, current_user_id, now_iso

@@ -1,6 +1,3 @@
-"""
-Record blueprint: /api/record
-"""
 import json
 
 from flask import Blueprint, request, jsonify

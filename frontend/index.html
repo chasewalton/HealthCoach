@@ -1333,6 +1333,7 @@
       user: null,
       profile: {},
       chatMode: null,              // 'review' | 'prepare'
+      chatPath: null,              // 'guided' | 'specific' — set after path selection
       messages: [],                // {role, content, chips?}[]
       sessions: [],                // fetched from API
       soapSection: 0,
@@ -1527,6 +1528,7 @@
 
     function startChat(mode) {
       state.chatMode = mode;
+      state.chatPath = null;
       state.messages = [];
       state.soapSection = 0;
       state.prepSection = 0;
@@ -1557,20 +1559,38 @@
       setProgress(0);
       showScreen('chat');
 
-      // Initial greeting
+      // Step 1: "Are you ready to begin?" — no API call
       setTimeout(() => {
-        const firstName = state.profile.name ? ' ' + state.profile.name.split(' ')[0] : '';
-        if (mode === 'review') {
-          const visitDate = state.patientRecord?.visitDate ? ` from **${state.patientRecord.visitDate}**` : '';
-          const intro = `Hi${firstName}! 👋 I'll walk you through your last visit${visitDate} step by step, starting with the **Subjective** section — that's everything you told your doctor about how you were feeling.\n\nI'll explain everything in plain language as we go. Ready to start?`;
-          addAssistantMessage(intro, ['Yes, let\'s start', 'Not right now']);
-          setProgress(5);
-        } else {
-          const intro = `Hi${firstName}! I'm here to help you prepare for your next clinic visit. 🌿\n\nWe'll go through four short sections together. First up: **What matters most to you** about your health right now.\n\nWhat's the main concern or goal you want to talk about with your doctor?`;
-          addAssistantMessage(intro);
-          setProgress(5);
-        }
+        const firstName = state.profile.name ? state.profile.name.split(' ')[0] : '';
+        const nameGreet = firstName ? `Hi ${firstName}! 👋` : 'Hi there! 👋';
+        const modeLabel = mode === 'review' ? 'visit review' : 'appointment prep';
+        const greeting = `${nameGreet} Are you ready to begin your ${modeLabel}?`;
+        addAssistantMessage(greeting, ["Yes, I'm ready!", "Not right now"]);
+        setProgress(5);
       }, 400);
+    }
+
+    function handleReadyResponse(text) {
+      const mode = state.chatMode;
+      const modeLabel = mode === 'review' ? 'visit review' : 'appointment prep';
+
+      if (text === "Yes, I'm ready!") {
+        // Step 2: path choice
+        addAssistantMessage(
+          "Great! How would you like to proceed?",
+          ["I have a specific question", "Walk me through it (guided)"]
+        );
+      } else if (text === "Not right now") {
+        addAssistantMessage(
+          "No problem at all! Come back whenever you're ready. Take care! 💚"
+        );
+      } else if (text === "I have a specific question") {
+        state.chatPath = 'specific';
+        addAssistantMessage("Go ahead — what's your question?");
+      } else if (text === "Walk me through it (guided)") {
+        state.chatPath = 'guided';
+        processUserInput('begin');
+      }
     }
 
     function renderSectionPills(sections, activeIdx) {
@@ -1650,7 +1670,11 @@
     function selectChip(value, chipsEl) {
       chipsEl.remove();
       addUserMessage(value);
-      processUserInput(value);
+      if (state.chatPath === null) {
+        handleReadyResponse(value);
+      } else {
+        processUserInput(value);
+      }
     }
 
     function sendMessage() {
@@ -1696,6 +1720,7 @@
             message: text,
             history,
             mode: state.chatMode,
+            path: state.chatPath || 'guided',
             record: state.patientRecord || {},
           }),
         });
@@ -1763,6 +1788,7 @@
       if (!s) return;
 
       state.chatMode = s.mode;
+      state.chatPath = 'guided';
       state.messages = s.messages.map(m => ({ role: m.role, content: m.content }));
       state.currentSessionId = s.id;
 

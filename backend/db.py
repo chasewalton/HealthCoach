@@ -1,6 +1,3 @@
-"""
-Database helpers: init, connection, auth guard, utilities.
-"""
 import os
 import json
 import sqlite3
@@ -9,17 +6,11 @@ from datetime import datetime, timezone
 
 from flask import session, abort
 
-# ============================================================
-# PATHS
-# ============================================================
 DATA_DIR = Path(os.environ.get('DATA_DIR', 'data'))
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 DB_PATH = DATA_DIR / 'healthcoach.db'
 
 
-# ============================================================
-# INIT
-# ============================================================
 def init_db():
     with sqlite3.connect(DB_PATH) as conn:
         conn.executescript("""
@@ -62,9 +53,6 @@ def init_db():
         """)
 
 
-# ============================================================
-# HELPERS
-# ============================================================
 def get_db():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
