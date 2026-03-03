@@ -38,27 +38,8 @@ Instructions:
 CONTEXT_PATIENT_LABEL = "Patient context:"
 CONTEXT_ALREADY_ASKED_LABEL = "Already asked (do NOT repeat):"
 
-# Default fake last record (used when none supplied)
-REVIEW_FAKE_LAST_RECORD = """
-subjective:
-  chiefComplaint: "Intermittent chest discomfort for 2 weeks"
-  hpi: "Non-exertional, 3/10 pressure, lasts ~5–10 min, no radiation"
-  ros: "No dyspnea, no palpitations, occasional heartburn"
-objective:
-  vitals: { BP: "128/78", HR: 72, RR: 14, Temp: "36.7 C", SpO2: "98%" }
-  exam: "Normal cardiac exam, clear lungs, no edema"
-  tests:
-    - "EKG (2025-12-28): normal sinus rhythm"
-    - "Lipid panel (2025-10-10): TC 220, LDL 140, HDL 42, TG 180"
-assessment:
-  - "Atypical chest pain—likely GERD vs. musculoskeletal; low suspicion ACS"
-  - "Hyperlipidemia, suboptimally controlled"
-plan:
-  - "Trial PPI daily x14 days"
-  - "Diet/exercise counseling; consider statin if LDL persists >130"
-  - "Return precautions; follow-up in 2–4 weeks"
-meds:
-  - "Omeprazole 20 mg qAM (new)"
-  - "No statin currently"
-allergies: "NKDA"
-""".strip()
+# Default fake last record (used when none supplied) — kept short to reduce prompt size
+REVIEW_FAKE_LAST_RECORD = """subjective: Chest discomfort 2wks, 3/10, non-exertional. No dyspnea/palpitations.
+objective: BP 128/78, HR 72. EKG normal. Lipids: LDL 140.
+assessment: Atypical chest pain, likely GERD. Hyperlipidemia.
+plan: PPI trial 14d; diet/exercise; follow-up 2–4wks. Omeprazole 20mg qAM."""

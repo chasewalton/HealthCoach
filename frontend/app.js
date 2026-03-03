@@ -389,8 +389,7 @@ async function sendDirect(text) {
       ...(chatMode === "review" ? { mode: "review", review_record: defaultReviewRecord() } : { mode: "ourdx" }),
     };
     const data = await apiPost("/chat", payload);
-    const reply = (data.reply || "").trim();
-    messages.push({ role: "assistant", content: reply || "No response. Check that your LLM (Ollama or OpenAI) is running and configured." });
+    messages.push({ role: "assistant", content: (data.reply || "").trim() });
   } catch (e) {
     messages.push({ role: "assistant", content: `Sorry—server error. (${e.message})` });
   } finally {
@@ -644,32 +643,7 @@ Style guidance: ${adapt}
 
 // ---- Review helpers ----
 function defaultReviewRecord() {
-  return `
-patientId: 12345
-date: 2026-01-05
-noteType: Follow-up
-subjective:
-  chiefComplaint: "Intermittent chest discomfort for 2 weeks"
-  hpi: "Non-exertional, 3/10 pressure, lasts ~5–10 min, no radiation"
-  ros: "No dyspnea, no palpitations, occasional heartburn"
-objective:
-  vitals: { BP: "128/78", HR: 72, RR: 14, Temp: "36.7 C", SpO2: "98%" }
-  exam: "Normal cardiac exam, clear lungs, no edema"
-  tests:
-    - "EKG (2025-12-28): normal sinus rhythm"
-    - "Lipid panel (2025-10-10): TC 220, LDL 140, HDL 42, TG 180"
-assessment:
-  - "Atypical chest pain—likely GERD vs. musculoskeletal; low suspicion ACS"
-  - "Hyperlipidemia, suboptimally controlled"
-plan:
-  - "Trial PPI daily x14 days"
-  - "Diet/exercise counseling; consider statin if LDL persists >130"
-  - "Return precautions; follow-up in 2–4 weeks"
-meds:
-  - "Omeprazole 20 mg qAM (new)"
-  - "No statin currently"
-allergies: "NKDA"
-`.trim();
+  return "subjective: Chest discomfort 2wks, 3/10, non-exertional. No dyspnea/palpitations.\nobjective: BP 128/78, HR 72. EKG normal. Lipids: LDL 140.\nassessment: Atypical chest pain, likely GERD. Hyperlipidemia.\nplan: PPI trial 14d; diet/exercise; follow-up 2–4wks. Omeprazole 20mg qAM.";
 }
 
 async function startReviewConversation() {
@@ -696,8 +670,7 @@ async function startReviewConversation() {
       review_record: defaultReviewRecord(),
     };
     const data = await apiPost("/chat", payload);
-    const reply = (data.reply || "").trim();
-    messages.push({ role: "assistant", content: reply || "No response. Check that your LLM (Ollama or OpenAI) is running and configured." });
+    messages.push({ role: "assistant", content: (data.reply || "").trim() });
     chatStarted = true;
     try { await saveTranscriptServer(); } catch {}
   } catch (e) {
@@ -722,8 +695,7 @@ async function startOurdxConversation() {
       mode: "ourdx",
     };
     const data = await apiPost("/chat", payload);
-    const reply = (data.reply || "").trim();
-    messages.push({ role: "assistant", content: reply || "No response. Check that your LLM (Ollama or OpenAI) is running and configured." });
+    messages.push({ role: "assistant", content: (data.reply || "").trim() });
     chatStarted = true;
     try { await saveTranscriptServer(); } catch {}
   } catch (e) {
@@ -755,8 +727,7 @@ async function sendMessage() {
       ...(chatMode === "review" ? { mode: "review", review_record: defaultReviewRecord() } : { mode: "ourdx" }),
     };
     const data = await apiPost("/chat", payload);
-    const reply = (data.reply || "").trim();
-    messages.push({ role: "assistant", content: reply || "No response. Check that your LLM (Ollama or OpenAI) is running and configured." });
+    messages.push({ role: "assistant", content: (data.reply || "").trim() });
   } catch (e) {
     messages.push({ role: "assistant", content: `Sorry—server error. (${e.message})` });
   } finally {
