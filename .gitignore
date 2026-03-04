@@ -32,8 +32,10 @@ Thumbs.db
 # Cache
 .cache/
 
-# Data (uncomment as needed)
-data/
+# Data — ignore DB but track seed files
+data/*.db
+data/*.db-shm
+data/*.db-wal
 
 # Ollama artifacts
 ollama/
