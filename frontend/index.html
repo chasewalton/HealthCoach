@@ -625,6 +625,71 @@
       box-shadow: 0 4px 12px rgba(14,159,140,0.25);
     }
 
+    /* =====================
+       CHAT NOTE CARD (inline in review flow)
+    ===================== */
+    .chat-note-card {
+      margin-top: 12px;
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+    }
+    .chat-note-card-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      background: var(--neutral-50);
+      border-bottom: 1px solid var(--color-border);
+    }
+    .chat-note-card-icon {
+      width: 28px; height: 28px;
+      border-radius: var(--radius-xs);
+      background: var(--teal-50);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .chat-note-card-icon svg { width: 13px; height: 13px; color: var(--teal-500); }
+    .chat-note-card-info { min-width: 0; }
+    .chat-note-card-title { font-size: 12px; font-weight: 700; color: var(--neutral-700); line-height: 1.2; }
+    .chat-note-card-meta { font-size: 11px; color: var(--neutral-400); margin-top: 2px; }
+    .chat-note-card-body {
+      padding: 12px 14px;
+      font-size: 12px;
+      line-height: 1.65;
+      color: var(--neutral-600);
+      white-space: pre-wrap;
+      word-break: break-word;
+      max-height: 110px;
+      overflow: hidden;
+      position: relative;
+    }
+    .chat-note-card-body::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 36px;
+      background: linear-gradient(transparent, white);
+      pointer-events: none;
+    }
+    .chat-note-card-body.expanded { max-height: none; }
+    .chat-note-card-body.expanded::after { display: none; }
+    .chat-note-card-toggle {
+      width: 100%;
+      padding: 7px 14px;
+      font-size: 12px; font-weight: 600;
+      color: var(--teal-600);
+      background: var(--neutral-50);
+      border: none;
+      border-top: 1px solid var(--color-border);
+      cursor: pointer;
+      text-align: center;
+      transition: background 0.15s;
+      display: block;
+    }
+    .chat-note-card-toggle:hover { background: var(--teal-100); }
+
     /* Choice chips */
     .choice-chips {
       display: flex;
@@ -1433,10 +1498,6 @@
         <div class="chat-title" id="chat-title">Last Visit Review</div>
       </div>
       <div class="chat-header-actions">
-        <button class="chat-note-btn" id="chat-note-btn" onclick="openNoteModal()" title="View or replace visit note">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-          Visit Note
-        </button>
         <button class="icon-btn" onclick="openShareModal()" title="Share or delete">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
         </button>
@@ -2027,12 +2088,119 @@
     const SOAP_SECTIONS = ['Subjective', 'Objective', 'Assessment', 'Plan'];
     const PREP_SECTIONS = ['What Matters', '6-Month Health', 'Getting It Right', 'Wrap-Up'];
 
-    /* ---- Chat Note Button (review mode only) ---- */
-    function initNoteContextPanel(mode) {
-      const btn = document.getElementById('chat-note-btn');
-      if (btn) btn.style.display = mode === 'review' ? 'inline-flex' : 'none';
+    function initNoteContextPanel() { /* note handled via chat prompt */ }
+
+    /* ============================================================
+       NOTE PROMPT (review mode — shown before "are you ready?")
+    ============================================================ */
+    let _awaitingNoteConfirm = false;
+
+    function showNotePrompt() {
+      const rec = state.patientRecord;
+      const isDefault = state.patientRecordIsDefault;
+
+      let noteText = '';
+      if (rec) {
+        noteText = typeof rec === 'string' ? rec : (rec.text || JSON.stringify(rec, null, 2));
+      }
+
+      const preview = noteText.slice(0, 380);
+      const hasMore = noteText.length > 380;
+
+      const cardHtml = `
+        <div class="chat-note-card">
+          <div class="chat-note-card-header">
+            <div class="chat-note-card-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="12" y1="17" x2="8" y2="17"/></svg>
+            </div>
+            <div class="chat-note-card-info">
+              <div class="chat-note-card-title">${isDefault ? 'Demo Visit Note' : 'Your Visit Note'}</div>
+              <div class="chat-note-card-meta">${isDefault ? 'BIDMC · Feb 14, 2025' : 'Uploaded by you'}</div>
+            </div>
+          </div>
+          <div class="chat-note-card-body" id="note-card-preview-body">${escapeHtml(preview)}</div>
+          ${hasMore ? `<button class="chat-note-card-toggle" id="note-card-toggle" onclick="toggleNoteCardExpand()">Show full note ▾</button>` : ''}
+        </div>`;
+
+      const chips = isDefault
+        ? ["Looks good, let's start", "Upload my own note"]
+        : ["Looks good, let's start", "Upload a different note", "Reset to demo note"];
+
+      const body = document.getElementById('chat-body');
+      const row = document.createElement('div');
+      row.className = 'msg-row assistant';
+      row.id = 'note-prompt-row';
+      row.innerHTML = `
+        <div class="msg-avatar">HC</div>
+        <div class="msg-bubble">Here's the visit note I'll be using for this review. Does it look right, or would you like to update it?${cardHtml}</div>`;
+      body.appendChild(row);
+
+      const chipRow = document.createElement('div');
+      chipRow.className = 'choice-chips';
+      chipRow.id = 'note-prompt-chips';
+      chipRow.innerHTML = chips.map((c, i) =>
+        `<button class="chip" style="animation-delay:${i * 0.08}s" onclick="selectNoteChip(this.textContent, this.closest('.choice-chips'))">${c}</button>`
+      ).join('');
+      body.appendChild(chipRow);
+      scrollBottom();
     }
-    /* ---- End Note Status Bar ---- */
+
+    function toggleNoteCardExpand() {
+      const body = document.getElementById('note-card-preview-body');
+      const btn  = document.getElementById('note-card-toggle');
+      if (!body || !btn) return;
+      body.classList.toggle('expanded');
+      btn.textContent = body.classList.contains('expanded') ? 'Show less ▴' : 'Show full note ▾';
+    }
+
+    function selectNoteChip(value, chipsEl) {
+      if (chipsEl) chipsEl.remove();
+
+      if (value === "Upload my own note" || value === "Upload a different note") {
+        _awaitingNoteConfirm = true;
+        // Open modal directly in replace mode
+        document.getElementById('note-view-mode').style.display = 'none';
+        document.getElementById('note-replace-mode').style.display = 'block';
+        document.getElementById('note-confirm-mode').style.display = 'none';
+        document.getElementById('note-textarea').value = '';
+        document.getElementById('note-char-count').textContent = '0';
+        openModal('modal-note');
+        return;
+      }
+
+      if (value === "Reset to demo note") {
+        _awaitingNoteConfirm = true;
+        _resetNoteToDefault();
+        return;
+      }
+
+      // "Looks good, let's start"
+      proceedFromNotePrompt();
+    }
+
+    async function _resetNoteToDefault() {
+      try {
+        const res = await fetch('/api/record');
+        if (res.ok) {
+          const data = await res.json();
+          state.patientRecord = data.content;
+          state.patientRecordIsDefault = true;
+        }
+      } catch (_) {}
+      updateNoteCard();
+      _awaitingNoteConfirm = false;
+      showToast('Using demo note ✓');
+      proceedFromNotePrompt();
+    }
+
+    function proceedFromNotePrompt() {
+      setTimeout(() => {
+        const firstName = state.profile.name ? state.profile.name.split(' ')[0] : '';
+        const nameGreet = firstName ? `Hi ${firstName}! 👋` : 'Hi there! 👋';
+        addAssistantMessage(`${nameGreet} Are you ready to begin your visit review?`, ["Yes, I'm ready!", "Not right now"]);
+        setProgress(5);
+      }, 350);
+    }
 
     function startChat(mode) {
       state.chatMode = mode;
@@ -2072,14 +2240,15 @@
       // Show/hide note context panel (review mode only)
       initNoteContextPanel(mode);
 
-      // Step 1: "Are you ready to begin?" — no API call
       setTimeout(() => {
-        const firstName = state.profile.name ? state.profile.name.split(' ')[0] : '';
-        const nameGreet = firstName ? `Hi ${firstName}! 👋` : 'Hi there! 👋';
-        const modeLabel = mode === 'review' ? 'visit review' : 'appointment prep';
-        const greeting = `${nameGreet} Are you ready to begin your ${modeLabel}?`;
-        addAssistantMessage(greeting, ["Yes, I'm ready!", "Not right now"]);
-        setProgress(5);
+        if (mode === 'review') {
+          showNotePrompt();
+        } else {
+          const firstName = state.profile.name ? state.profile.name.split(' ')[0] : '';
+          const nameGreet = firstName ? `Hi ${firstName}! 👋` : 'Hi there! 👋';
+          addAssistantMessage(`${nameGreet} Are you ready to begin your appointment prep?`, ["Yes, I'm ready!", "Not right now"]);
+          setProgress(5);
+        }
       }, 400);
     }
 
@@ -2598,8 +2767,11 @@
         state.patientRecord = { type: 'plaintext', text };
         state.patientRecordIsDefault = false;
         updateNoteCard();
+        const wasAwaiting = _awaitingNoteConfirm;
+        _awaitingNoteConfirm = false;
         closeModal('modal-note');
         showToast('Note saved ✓');
+        if (wasAwaiting) proceedFromNotePrompt();
       } catch (_) {
         showToast('Could not save note. Please try again.');
       }
@@ -2754,6 +2926,11 @@
     function closeModal(id) {
       document.getElementById(id).classList.remove('open');
       document.body.style.overflow = '';
+      // If user dismissed the note modal without saving during the note prompt flow, still proceed
+      if (id === 'modal-note' && _awaitingNoteConfirm) {
+        _awaitingNoteConfirm = false;
+        proceedFromNotePrompt();
+      }
     }
     function closeModalOnOverlay(e, id) {
       if (e.target === document.getElementById(id)) closeModal(id);
