@@ -1,0 +1,10 @@
+/* =====================
+   LAYOUT
+===================== */
+.app { display: flex; flex-direction: column; min-height: 100vh; }
+
+/* =====================
+   SCREENS / VIEWS
+===================== */
+.screen { display: none; width: 100%; min-height: 100vh; }
+.screen.active { display: flex; flex-direction: column; }
