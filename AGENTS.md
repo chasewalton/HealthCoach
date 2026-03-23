@@ -1,4 +1,4 @@
-# HealthCoach — Claude Code Instructions
+# HealthCoach — Codex Instructions
 
 ## Project Overview
 HealthCoach is a patient-facing web app that helps users understand their last clinic visit (SOAP note review) and prepare for their next appointment (structured interview). The frontend is a Vite-powered modular vanilla JS application. The backend is a single Firebase Cloud Function (`functions/src/index.ts`) that serves all `/api/*` routes through Express.

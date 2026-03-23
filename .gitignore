@@ -12,8 +12,14 @@ __pycache__/
 *.nbconvert.ipynb
 notebooks/
 
-# Environments
-*env*
+# Virtual environments
+venv/
+.venv/
+
+# Environment files (but NOT .env.example)
+.env
+.env.local
+.env.*.local
 
 # IDE/editor
 .vscode/
@@ -39,3 +45,12 @@ data/*.db-wal
 
 # Ollama artifacts
 ollama/
+
+# Frontend build
+frontend/node_modules/
+frontend/dist/
+functions/node_modules/
+functions/lib/
+.firebase/
+public/
+dataconnect/.dataconnect/
