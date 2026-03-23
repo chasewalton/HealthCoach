@@ -1,0 +1,17 @@
+{
+  "name": "healthcoach",
+  "private": true,
+  "description": "Vite frontend backed by Firebase Hosting, Auth, Firestore, and Cloud Functions.",
+  "scripts": {
+    "dev": "npm run dev --prefix frontend",
+    "dev:vite": "npm run dev --prefix frontend",
+    "build": "npm run build --prefix functions && npm run build --prefix frontend",
+    "build:functions": "npm run build --prefix functions",
+    "build:frontend": "npm run build --prefix frontend",
+    "preview": "npm run preview --prefix frontend",
+    "deploy": "firebase deploy"
+  },
+  "dependencies": {
+    "@dataconnect/generated": "file:src/dataconnect-generated"
+  }
+}
