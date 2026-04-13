@@ -2,7 +2,7 @@ import type { DecodedIdToken } from 'firebase-admin/auth';
 
 import { adminDb, nowIso } from './firebaseAdmin.js';
 import { HttpError } from './http.js';
-import { DEFAULT_MODEL_PREF, MODEL_MAP } from './prompts.js';
+import { DEFAULT_MODEL_PREF, LEGACY_DEFAULT_MODEL_PREF, MODEL_MAP } from './prompts.js';
 
 const USERNAME_PATTERN = /^[a-z0-9._-]{3,40}$/;
 
@@ -56,10 +56,17 @@ function sanitizeProfileUpdates(data: EditableProfileInput) {
 }
 
 function mergeProfile(profileData?: Record<string, unknown>) {
-  return {
+  const merged = {
     ...PROFILE_DEFAULTS,
     ...(profileData || {}),
   };
+
+  const modelPref = typeof merged.modelPref === 'string' ? merged.modelPref : '';
+  if (!modelPref || modelPref === LEGACY_DEFAULT_MODEL_PREF || !(modelPref in MODEL_MAP)) {
+    merged.modelPref = DEFAULT_MODEL_PREF;
+  }
+
+  return merged;
 }
 
 export async function getProfileResponse(uid: string, authToken: DecodedIdToken) {

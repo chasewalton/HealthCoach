@@ -9,6 +9,7 @@ import './styles/home-landing.css';
 import './styles/utilities.css';
 
 import state from './state.js';
+import { auth } from './firebase.js';
 import { showScreen } from './router.js';
 import { ApiError } from './api/client.js';
 import { checkSession, logout } from './api/auth.js';
@@ -27,6 +28,8 @@ import * as ShareModal from './components/modals/ShareModal.js';
 import * as AdminModal from './components/modals/AdminModal.js';
 import * as ProfileModal from './components/modals/ProfileModal.js';
 import * as VersionChangelogModal from './components/modals/VersionChangelogModal.js';
+import * as LandingShareModal from './components/modals/LandingShareModal.js';
+import * as EndChatModal from './components/modals/EndChatModal.js';
 
 import * as NotePrompt from './components/chat/NotePrompt.js';
 import * as HistoryDrawer from './components/HistoryDrawer.js';
@@ -52,6 +55,8 @@ function renderApp() {
     AdminModal.render(),
     ProfileModal.render(),
     VersionChangelogModal.render(),
+    LandingShareModal.render(),
+    EndChatModal.render(),
     HistoryDrawer.render(),
     Toast.render(),
     VersionBadge.render(),
@@ -70,6 +75,8 @@ function initComponents() {
   AdminModal.init();
   ProfileModal.init();
   VersionChangelogModal.init();
+  LandingShareModal.init();
+  EndChatModal.init();
   VersionBadge.init();
 }
 
@@ -96,7 +103,7 @@ function wireCallbacks() {
         showScreen('auth');
         return;
       }
-      await enterApp();
+      await enterApp(auth.currentUser);
       showScreen('landing');
     },
   });
@@ -111,16 +118,13 @@ function wireCallbacks() {
     onOpenAdminLogin: () => AdminModal.openLogin(),
     onSignOut: signOut,
     onLoadSession: loadSessionById,
-    onStartCombinedFlow: () => {
-      ChatScreen.startChat('combined');
-      showScreen('chat');
-      ChatScreen.showInitialPrompt();
-    },
     onOpenHomeLanding: () => {
       state.homeLandingReturnScreen = 'landing';
       HomeLandingScreen.refresh();
       showScreen('home');
     },
+    onOpenLandingShare: () => LandingShareModal.open(),
+    onEndChat: () => EndChatModal.open(),
   });
 
   ChatScreen.setCallbacks({
@@ -134,6 +138,11 @@ function wireCallbacks() {
   NoteModal.setCallbacks({
     onNoteUpdated: () => LandingScreen.updateNoteCard(),
     onProceedFromNote: () => ChatScreen.proceedFromNotePrompt(),
+  });
+
+  EndChatModal.setCallbacks({
+    onConfirmEnd: () => LandingScreen.startNewConversation(),
+    onOpenShare: () => LandingShareModal.open(),
   });
 
   ShareModal.setCallbacks({
@@ -163,9 +172,10 @@ function wireCallbacks() {
   });
 }
 
-async function enterApp() {
+async function enterApp(firebaseUser) {
+  await auth.authStateReady();
   showScreen('landing');
-  await Promise.all([fetchProfile(), fetchPatientRecord()]);
+  await Promise.all([fetchProfile(firebaseUser), fetchPatientRecord(firebaseUser)]);
   LandingScreen.updatePersonalization();
   LandingScreen.updateNoteCard();
   LandingScreen.initLandingChat();
@@ -194,6 +204,7 @@ function resetAuthenticatedState() {
   state.landingSessionId = null;
   state.landingIsTyping = false;
   state.landingConversationStarted = false;
+  state.landingPrepareNextAction = 'prepare';
   disposeLandingAmbient3d();
 }
 
@@ -212,9 +223,9 @@ function mergeUserAndProfile(data) {
   }
 }
 
-async function fetchProfile() {
+async function fetchProfile(firebaseUser) {
   try {
-    const data = await getProfile();
+    const data = await getProfile(firebaseUser);
     mergeUserAndProfile(data);
   } catch (err) {
     if (err instanceof ApiError && (err.status === 404 || err.status === 502)) {
@@ -224,9 +235,9 @@ async function fetchProfile() {
   }
 }
 
-async function fetchPatientRecord() {
+async function fetchPatientRecord(firebaseUser) {
   try {
-    const data = await getRecord();
+    const data = await getRecord(firebaseUser);
     state.patientRecord = data.content;
     state.patientRecordIsDefault = data.isDefault;
   } catch (_) {}
@@ -277,7 +288,7 @@ async function handleAuthStateChange(user) {
     displayName: user.displayName || '',
   };
 
-  await enterApp();
+  await enterApp(user);
   if (transitionId !== activeAuthTransition) return;
   HomeLandingScreen.refresh();
 }

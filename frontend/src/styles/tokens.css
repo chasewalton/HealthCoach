@@ -64,4 +64,7 @@
 
   --font-body: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-serif: 'Lora', Georgia, serif;
+
+  /* Multiply every `font-size: calc(Npx * var(--type-scale))` to tune app-wide type (1 = previous sizes). */
+  --type-scale: 1.125;
 }

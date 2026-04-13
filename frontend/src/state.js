@@ -18,6 +18,11 @@ const state = {
   landingIsTyping: false,
   /** True after first message or when loading a saved dashboard session (compact hero + chat bubbles). */
   landingConversationStarted: false,
+  /**
+   * Next action for the floating #landing-prepare-btn (synced with hero quick prompts).
+   * `prepare` → label "Prepare for my next visit"; `review` → "Review my last visits".
+   */
+  landingPrepareNextAction: 'prepare',
   /** Screen to return to from home landing (`landing` | `auth`). */
   homeLandingReturnScreen: 'landing',
 };

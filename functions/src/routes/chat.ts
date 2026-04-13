@@ -5,7 +5,13 @@ import type { AuthenticatedRequest } from '../middleware.js';
 import { verifyAuth } from '../middleware.js';
 import { HttpError } from '../lib/http.js';
 import { createChatCompletion, isOpenRouterConfigured } from '../lib/openrouter.js';
-import { DEFAULT_MODEL_PREF, MODEL_MAP, getSummaryPrompt, getSystemPrompt } from '../lib/prompts.js';
+import {
+  DEFAULT_MODEL_PREF,
+  LEGACY_DEFAULT_MODEL_PREF,
+  MODEL_MAP,
+  getSummaryPrompt,
+  getSystemPrompt,
+} from '../lib/prompts.js';
 import { getProfileResponse } from '../lib/users.js';
 
 const router = Router();
@@ -18,6 +24,9 @@ const HISTORY_LIMIT = 30;
 
 function resolveModel(modelPref: unknown) {
   const pref = typeof modelPref === 'string' ? modelPref : DEFAULT_MODEL_PREF;
+  if (pref === LEGACY_DEFAULT_MODEL_PREF) {
+    return MODEL_MAP[DEFAULT_MODEL_PREF];
+  }
   return MODEL_MAP[pref] || MODEL_MAP[DEFAULT_MODEL_PREF];
 }
 

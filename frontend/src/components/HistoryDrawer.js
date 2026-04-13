@@ -58,7 +58,7 @@ export function close() {
 export function renderItems() {
   const body = document.getElementById('drawer-body');
   if (!state.sessions.length) {
-    body.innerHTML = `<div style="padding:24px 8px;text-align:center;color:var(--neutral-400);font-size:14px;">No conversations yet.</div>`;
+    body.innerHTML = `<div style="padding:24px 8px;text-align:center;color:var(--neutral-400);font-size:calc(14px * var(--type-scale));">No conversations yet.</div>`;
     return;
   }
   body.innerHTML = state.sessions.slice().reverse().map(s => `

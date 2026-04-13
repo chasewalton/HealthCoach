@@ -56,7 +56,7 @@ export async function open() {
         <div class="typing-dot"></div>
         <div class="typing-dot"></div>
       </div>
-      <div style="font-size:14px;">Generating your summary...</div>
+      <div style="font-size:calc(14px * var(--type-scale));">Generating your summary...</div>
     </div>
   `;
   openModal(MODAL_ID);
@@ -71,13 +71,13 @@ export async function open() {
     }
     state.lastSummary = data.summary;
     content.innerHTML = `
-      <div style="font-size:12px;color:var(--neutral-400);margin-bottom:20px;">
+      <div style="font-size:calc(12px * var(--type-scale));color:var(--neutral-400);margin-bottom:20px;">
         Generated ${new Date().toLocaleString()} - ${modeLabel}
       </div>
-      <div style="font-size:15px;line-height:1.7;color:var(--color-text);">
+      <div style="font-size:calc(15px * var(--type-scale));line-height:1.7;color:var(--color-text);">
         ${formatMessage(data.summary)}
       </div>
-      <div style="background:var(--teal-50);border-radius:var(--radius-md);padding:12px 16px;margin-top:20px;font-size:13px;color:var(--teal-700);line-height:1.5;">
+      <div style="background:var(--teal-50);border-radius:var(--radius-md);padding:12px 16px;margin-top:20px;font-size:calc(13px * var(--type-scale));color:var(--teal-700);line-height:1.5;">
         Bring this summary to your next appointment to help your doctor understand what matters most to you.
       </div>
     `;

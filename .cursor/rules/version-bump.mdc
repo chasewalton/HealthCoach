@@ -1,0 +1,27 @@
+---
+description: Bump the app version and changelog after every functional change
+alwaysApply: true
+---
+
+# Version Bump Rule
+
+After making any functional change (feature, fix, refactor, style, or config), you MUST update `frontend/src/versionInfo.js` before finishing your turn:
+
+1. **Increment `VERSION`** — bump the patch number for fixes/tweaks, minor for features, major for breaking changes.
+2. **Prepend a `CHANGELOG` entry** — add a new object at index 0 with `version` matching the new `VERSION`, today's date as `date` (`YYYY-MM-DD`), and a concise `changes` array describing what was done.
+
+```js
+// Example: after fixing a login bug on 2026-04-06
+export const VERSION = 'v2.0.8';
+
+export const CHANGELOG = [
+  {
+    version: 'v2.0.8',
+    date: '2026-04-06',
+    changes: ['Fixed login redirect loop when session token expired.'],
+  },
+  // …existing entries
+];
+```
+
+Do NOT skip this step. Do NOT leave `VERSION` and the top changelog entry out of sync.

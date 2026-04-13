@@ -25,6 +25,39 @@ function extractHeaderText(line) {
   return line.trim().replace(/:$/, '');
 }
 
+/** Section card styling; these render as plain subheadings (no bubble/card). */
+function isPlainSubheadingHeader(text) {
+  const t = (text || '').trim();
+  return /^here'?s how to prepare$/i.test(t);
+}
+
+/**
+ * If a run of plain-text lines ends with one or more lines that form a
+ * question (last non-empty line ends with '?'), and there is preceding
+ * non-question content separated by a blank line, split into two groups
+ * so the question renders as its own paragraph block outside section cards.
+ */
+function splitTrailingQuestion(textLines) {
+  let lastBlank = -1;
+  for (let j = textLines.length - 1; j >= 0; j--) {
+    if (textLines[j].trim() === '') { lastBlank = j; break; }
+  }
+  if (lastBlank <= 0) return [textLines];
+
+  const tail = textLines.slice(lastBlank + 1);
+  while (tail.length && tail[0].trim() === '') tail.shift();
+  if (!tail.length) return [textLines];
+
+  const lastLine = tail[tail.length - 1].trim();
+  if (!lastLine.endsWith('?')) return [textLines];
+
+  const head = textLines.slice(0, lastBlank);
+  while (head.length && head[head.length - 1].trim() === '') head.pop();
+  if (!head.length) return [textLines];
+
+  return [head, tail];
+}
+
 /**
  * Groups consecutive lines into semantic blocks: section-headers, bullet lists,
  * ordered lists, and paragraph text.  Then wraps header + following content into
@@ -84,9 +117,12 @@ export function formatMessage(text) {
     while (textLines.length && textLines[0].trim() === '') textLines.shift();
     while (textLines.length && textLines[textLines.length - 1].trim() === '') textLines.pop();
     if (textLines.length) {
-      const inner = textLines.map((l) => applyInlineMarkdown(l)).join('<br>');
-      if (inner.trim()) {
-        blocks.push({ type: 'p', html: inner });
+      const groups = splitTrailingQuestion(textLines);
+      for (const group of groups) {
+        const inner = group.map((l) => applyInlineMarkdown(l)).join('<br>');
+        if (inner.trim()) {
+          blocks.push({ type: 'p', html: inner });
+        }
       }
     }
   }
@@ -94,7 +130,23 @@ export function formatMessage(text) {
   return renderBlocks(blocks);
 }
 
+function isTrailingQuestion(block) {
+  if (block.type !== 'p') return false;
+  const text = block.html.replace(/<[^>]+>/g, '').trim();
+  return text.endsWith('?');
+}
+
 function renderBlocks(blocks) {
+  let trailing = null;
+  if (
+    blocks.length >= 2 &&
+    isTrailingQuestion(blocks[blocks.length - 1]) &&
+    blocks.some((b) => b.type === 'header')
+  ) {
+    trailing = blocks[blocks.length - 1];
+    blocks = blocks.slice(0, -1);
+  }
+
   const parts = [];
   let i = 0;
 
@@ -102,6 +154,8 @@ function renderBlocks(blocks) {
     const block = blocks[i];
 
     if (block.type === 'header') {
+      const plain = isPlainSubheadingHeader(block.text);
+      const sectionClass = plain ? 'msg-section msg-section--plain' : 'msg-section';
       const headerHtml = `<div class="msg-section-header">${block.text}</div>`;
       const contentParts = [];
       i++;
@@ -111,16 +165,20 @@ function renderBlocks(blocks) {
       }
       if (contentParts.length) {
         parts.push(
-          `<div class="msg-section">${headerHtml}<div class="msg-section-body">${contentParts.join('')}</div></div>`
+          `<div class="${sectionClass}">${headerHtml}<div class="msg-section-body">${contentParts.join('')}</div></div>`
         );
       } else {
-        parts.push(`<div class="msg-section">${headerHtml}</div>`);
+        parts.push(`<div class="${sectionClass}">${headerHtml}</div>`);
       }
       continue;
     }
 
     parts.push(renderSingleBlock(block));
     i++;
+  }
+
+  if (trailing) {
+    parts.push(renderSingleBlock(trailing));
   }
 
   return parts.join('');

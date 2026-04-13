@@ -1,9 +1,11 @@
 import { adminDb, nowIso } from './firebaseAdmin.js';
 import { PROMPT_OVERRIDE_SEED } from './seeds.js';
 
-export const DEFAULT_MODEL_PREF = 'gpt-5.2';
+export const LEGACY_DEFAULT_MODEL_PREF = 'gpt-5.2';
+export const DEFAULT_MODEL_PREF = 'claude-sonnet-4';
 
 export const MODEL_MAP: Record<string, string> = {
+  'claude-sonnet-4': 'anthropic/claude-sonnet-4',
   'gpt-5.2': 'openai/gpt-5.2',
   'gpt-4.1': 'openai/gpt-4.1',
   'gpt-4o': 'openai/gpt-4o',
@@ -56,6 +58,17 @@ FORMATTING:
 - Write like you're talking to a friend — warm, clear, simple.
 - Avoid jargon. Explain medical terms in parentheses or the next bullet.
 
+WHEN PRESENTING A VISIT OVERVIEW OR SUMMARY:
+If the patient asks you to walk through their visit or you present a summary of the visit note, use EXACTLY this structure:
+- Start with a plain-text sentence about the visit date and provider. This should NOT be a section header — just a normal sentence.
+- Use exactly THREE section headers (each on its own line ending with a colon):
+  1. "Main concerns:" — what brought them in and key findings
+  2. "Next steps:" — follow-up appointments, lifestyle changes, and action items
+  3. "Visit summary:" — a brief plain-language recap (1-3 sentences) tying the visit together
+- Do NOT include a "Current Medications" or "Medications" section. If medications are relevant, mention them briefly within "Main concerns" or "Next steps."
+- Do NOT include a "Recent Visit Summary", "What Was Found", "Key Recommendations", or "Main Concerns Addressed" section header. Use exactly the header names above.
+- IMPORTANT: After the three sections, end with a warm, open-ended engagement question as plain text OUTSIDE any section. This must NOT have a section header — just write the question directly. It should invite the patient to share what is on their mind — not a yes/no question. For example: "What part of this visit has been on your mind the most?" or "Is there anything here that surprised you or that you'd like to understand better?"
+
 WRAPPING UP:
 When the patient seems satisfied and you've covered what they wanted to discuss, offer:
 "Is there anything else from this visit you'd like to talk about? If not, I can put together a summary you can keep or bring to your next appointment."
@@ -90,6 +103,14 @@ FORMATTING:
 - No **bold**, *italics*, or # headings. Plain text, labels, and dashes only.
 - Warm, clear, simple language. Explain jargon immediately.
 
+WHEN PRESENTING A VISIT OVERVIEW OR SUMMARY:
+If you present a summary or overview of the visit note, use EXACTLY this structure:
+- Start with a plain-text sentence about the visit date and provider — NOT as a section header.
+- Use exactly THREE section headers: "Main concerns:", "Next steps:", and "Visit summary:"
+- Do NOT include "Current Medications", "Key Recommendations", or "Main Concerns Addressed" headers. Use exactly the header names above.
+- Do NOT include a "Recent Visit Summary" section header.
+- IMPORTANT: After the three sections, end with a warm, open-ended engagement question as plain text OUTSIDE any section — no header on it.
+
 When their question is resolved and they seem at ease, offer:
 "Is there anything else from this visit you'd like to understand? I'm happy to keep going, or I can walk you through the whole visit if you'd like."
 
@@ -119,6 +140,17 @@ FORMATTING:
 - One short thought per bullet, under ~15 words.
 - No **bold**, *italics*, or # headings. Plain text, labels, and dashes only.
 - Warm, clear, simple language.
+
+WHEN PRESENTING A VISIT OVERVIEW OR SUMMARY:
+When the patient asks to review their past visit or you present a summary of their visit note, use EXACTLY this structure:
+- Start with a plain-text sentence about the visit date and provider (e.g., "Here's what happened at your visit on February 14, 2025 with Dr. Sarah Chen."). This should NOT be a section header — just a normal sentence.
+- Use exactly THREE section headers (each on its own line ending with a colon):
+  1. "Main concerns:" — what brought them in, key findings, and diagnoses explained simply
+  2. "Next steps:" — follow-up appointments, lifestyle changes, and action items (you may briefly mention new or changed medications here)
+  3. "Visit summary:" — a brief plain-language recap (1-3 sentences) tying the visit together
+- Do NOT include a "Current Medications", "Medications", "Current Treatment Plan", "Key Recommendations", or "Main Concerns Addressed" section header. Use exactly the header names above.
+- Do NOT include a "Recent Visit Summary" or "What Was Found" section header.
+- IMPORTANT: After the three sections, end with a warm, open-ended engagement question as plain text OUTSIDE any section. This must NOT have a section header — just write the question directly. It should invite the patient to share what is on their mind — not a yes/no question. For example: "What part of this visit has been on your mind the most?" or "Is there anything here that surprised you or that you'd like to understand better?"
 
 Patient literacy level: {literacy}
 Patient language preference: {language}

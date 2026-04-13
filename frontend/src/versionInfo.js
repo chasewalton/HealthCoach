@@ -1,11 +1,65 @@
 /** Display version (keep in sync with VersionBadge / release notes). */
-export const VERSION = 'v2.0.0';
+export const VERSION = 'v2.0.9';
 
 /**
- * Newest first. Update when you ship user-visible changes.
+ * Newest first. Update when you ship changes.
  * @type {{ version: string; date?: string; changes: string[] }[]}
  */
 export const CHANGELOG = [
+  {
+    version: 'v2.0.9',
+    date: '2026-04-08',
+    changes: [
+      'End-chat and landing share modals, chat export helper, and related landing/auth/API UI updates.',
+    ],
+  },
+  {
+    version: 'v2.0.8',
+    date: '2026-04-06',
+    changes: [
+      'Chat: “Here’s how to prepare” section headers render as plain subheadings instead of boxed cards.',
+    ],
+  },
+  {
+    version: 'v2.0.6',
+    date: '2026-03-22',
+    changes: ['Version bump.'],
+  },
+  {
+    version: 'v2.0.5',
+    date: '2026-03-23',
+    changes: [
+      'Landing quick actions: "Help me prepare for my next visit" now starts the same dashboard chat flow as the other landing prompts instead of jumping into the separate combined chat screen.',
+    ],
+  },
+  {
+    version: 'v2.0.4',
+    date: '2026-03-22',
+    changes: [
+      'Registration: save the new account profile with the freshly created Firebase user so signup no longer fails with `/api/profile` 401 errors.',
+    ],
+  },
+  {
+    version: 'v2.0.3',
+    date: '2026-03-23',
+    changes: [
+      'API client: attach ID tokens using the Firebase User from the auth listener when needed; retry once with a forced token refresh on 401.',
+    ],
+  },
+  {
+    version: 'v2.0.2',
+    date: '2026-03-23',
+    changes: [
+      'Wait for Firebase auth to finish restoring the session before calling the API so the first /api/profile request includes an ID token.',
+    ],
+  },
+  {
+    version: 'v2.0.1',
+    date: '2026-03-23',
+    changes: [
+      'HTTP API: public invoker on the Cloud Function so Hosting /api rewrites work. Local Vite: set BACKEND_URL to production Hosting for the API proxy.',
+    ],
+  },
   {
     version: 'v2.0.0',
     date: '2026-03-22',

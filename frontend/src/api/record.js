@@ -1,7 +1,7 @@
 import { apiRequest } from './client.js';
 
-export function getRecord() {
-  return apiRequest('GET', '/api/record');
+export function getRecord(authUser) {
+  return apiRequest('GET', '/api/record', undefined, authUser ? { user: authUser } : {});
 }
 
 export function uploadRecord(content) {

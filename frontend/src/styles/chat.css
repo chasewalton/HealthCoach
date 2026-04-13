@@ -31,13 +31,13 @@
 .chat-back-btn svg { width: 18px; height: 18px; }
 .chat-header-info { flex: 1; min-width: 0; }
 .chat-mode-label {
-  font-size: 12px; font-weight: 700; letter-spacing: 0.06em;
+  font-size: calc(12px * var(--type-scale)); font-weight: 700; letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 .chat-mode-label.review  { color: var(--teal-600); }
 .chat-mode-label.prepare { color: var(--coral-500); }
 .chat-title {
-  font-size: 15px; font-weight: 700; color: var(--neutral-900);
+  font-size: calc(15px * var(--type-scale)); font-weight: 700; color: var(--neutral-900);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .chat-header-actions { display: flex; gap: 6px; flex-shrink: 0; }
@@ -68,7 +68,7 @@
 .section-pill {
   padding: 6px 14px;
   border-radius: var(--radius-full);
-  font-size: 12px; font-weight: 700; letter-spacing: 0.03em;
+  font-size: calc(12px * var(--type-scale)); font-weight: 700; letter-spacing: 0.03em;
   white-space: nowrap;
   transition: all 0.2s;
   border: 1.5px solid var(--color-border);
@@ -124,7 +124,7 @@
   border-radius: 50%;
   flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
-  font-size: 13px; font-weight: 700;
+  font-size: calc(13px * var(--type-scale)); font-weight: 700;
   margin-top: 2px;
 }
 .msg-row.assistant .msg-avatar {
@@ -139,7 +139,7 @@
 .msg-bubble {
   max-width: min(85%, 540px);
   padding: 14px 18px;
-  font-size: 15px;
+  font-size: calc(15px * var(--type-scale));
   line-height: 1.7;
   overflow-wrap: break-word;
   word-break: break-word;
@@ -170,8 +170,25 @@
 .msg-section:first-child { margin-top: 0; }
 .msg-section:last-child  { margin-bottom: 0; }
 
+/* Flat subheading + body: no filled “bubble” card (e.g. “Here’s how to prepare”). */
+.msg-section.msg-section--plain {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  margin: 12px 0 10px;
+  border-left: none;
+  box-shadow: none;
+}
+.msg-section.msg-section--plain:first-child {
+  margin-top: 0;
+}
+.msg-section.msg-section--plain .msg-section-header {
+  margin-bottom: 6px;
+}
+
 .msg-section-header {
-  font-size: 13px;
+  font-size: calc(13px * var(--type-scale));
   font-weight: 800;
   letter-spacing: 0.03em;
   text-transform: uppercase;
@@ -184,7 +201,7 @@
 
 .msg-section-body .chat-msg-text {
   margin: 0 0 0.4em;
-  font-size: 14.5px;
+  font-size: calc(14.5px * var(--type-scale));
 }
 .msg-section-body .chat-msg-text:last-child {
   margin-bottom: 0;
@@ -194,7 +211,7 @@
   margin-bottom: 2px;
 }
 .msg-section-body .chat-msg-list li {
-  font-size: 14.5px;
+  font-size: calc(14.5px * var(--type-scale));
 }
 
 /* --- Bullet / ordered lists --- */
@@ -220,7 +237,7 @@
 }
 
 /* Prepare-mode coral section accents */
-#screen-chat.mode-prepare .msg-section {
+#screen-chat.mode-prepare .msg-section:not(.msg-section--plain) {
   border-left-color: var(--coral-400);
 }
 #screen-chat.mode-prepare .msg-section-header {
@@ -238,6 +255,51 @@
   color: white;
   border-radius: var(--radius-lg) 4px var(--radius-lg) var(--radius-lg);
   box-shadow: 0 4px 12px rgba(14,159,140,0.25);
+}
+
+/* User message bubble wrapper (holds bubble + edit button) */
+.msg-bubble-wrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  max-width: min(85%, 540px);
+}
+.msg-bubble-wrap .msg-bubble {
+  max-width: 100%;
+}
+.msg-edit-btn {
+  position: absolute;
+  bottom: -6px;
+  left: -4px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1.5px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--neutral-400);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transform: scale(0.85);
+  transition: opacity 0.15s, transform 0.15s, color 0.15s, border-color 0.15s;
+  box-shadow: var(--shadow-xs);
+}
+.msg-edit-btn svg {
+  width: 14px;
+  height: 14px;
+}
+.msg-row.user:hover .msg-edit-btn,
+.msg-edit-btn:focus-visible {
+  opacity: 1;
+  transform: scale(1);
+}
+.msg-edit-btn:hover {
+  color: var(--teal-600);
+  border-color: var(--teal-300);
+  background: var(--teal-50);
 }
 
 /* Chat note card (inline in review flow) */
@@ -265,11 +327,11 @@
 }
 .chat-note-card-icon svg { width: 13px; height: 13px; color: var(--teal-500); }
 .chat-note-card-info { min-width: 0; }
-.chat-note-card-title { font-size: 12px; font-weight: 700; color: var(--neutral-700); line-height: 1.2; }
-.chat-note-card-meta { font-size: 11px; color: var(--neutral-400); margin-top: 2px; }
+.chat-note-card-title { font-size: calc(12px * var(--type-scale)); font-weight: 700; color: var(--neutral-700); line-height: 1.2; }
+.chat-note-card-meta { font-size: calc(11px * var(--type-scale)); color: var(--neutral-400); margin-top: 2px; }
 .chat-note-card-body {
   padding: 12px 14px;
-  font-size: 12px;
+  font-size: calc(12px * var(--type-scale));
   line-height: 1.65;
   color: var(--neutral-600);
   white-space: pre-wrap;
@@ -291,7 +353,7 @@
 .chat-note-card-toggle {
   width: 100%;
   padding: 7px 14px;
-  font-size: 12px; font-weight: 600;
+  font-size: calc(12px * var(--type-scale)); font-weight: 600;
   color: var(--teal-600);
   background: var(--neutral-50);
   border: none;
@@ -318,7 +380,7 @@
 .chip {
   padding: 8px 16px;
   border-radius: var(--radius-full);
-  font-size: 14px; font-weight: 600;
+  font-size: calc(14px * var(--type-scale)); font-weight: 600;
   border: 1.5px solid var(--chip-color, var(--teal-500));
   color: var(--chip-color, var(--teal-500));
   background: var(--chip-bg, white);
@@ -392,7 +454,7 @@
   border: none;
   outline: none;
   background: transparent;
-  font-size: 15px;
+  font-size: calc(15px * var(--type-scale));
   color: var(--color-text);
   line-height: 1.5;
   max-height: 120px;
@@ -430,7 +492,7 @@
   justify-content: flex-end;
 }
 .summarize-btn {
-  font-size: 13px; font-weight: 600;
+  font-size: calc(13px * var(--type-scale)); font-weight: 600;
   color: var(--teal-600);
   padding: 6px 14px;
   border-radius: var(--radius-full);
@@ -499,7 +561,7 @@
   display: none;
   align-items: center;
   gap: 5px;
-  font-size: 11px;
+  font-size: calc(11px * var(--type-scale));
   font-weight: 700;
   color: var(--teal-600);
   background: var(--teal-50);

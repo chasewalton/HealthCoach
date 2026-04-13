@@ -1,4 +1,4 @@
-import { login, register } from '../../api/auth.js';
+import { login, loginAnonymously, register } from '../../api/auth.js';
 
 let onOpenHomeLanding = null;
 
@@ -48,6 +48,8 @@ export function render() {
         </div>
         <button type="submit" class="btn-primary" id="auth-btn">Sign In</button>
       </form>
+      <div class="auth-divider"><span>or</span></div>
+      <button type="button" class="btn-guest" id="auth-guest-btn">Continue as Guest</button>
     </div>
   </div>`;
 }
@@ -57,6 +59,7 @@ export function init() {
     tab.addEventListener('click', () => switchAuthTab(tab.dataset.tab));
   });
   document.getElementById('auth-form').addEventListener('submit', handleAuth);
+  document.getElementById('auth-guest-btn').addEventListener('click', handleGuestLogin);
   const brand = document.getElementById('auth-brand-hit');
   if (brand) {
     brand.addEventListener('click', () => {
@@ -85,6 +88,24 @@ function switchAuthTab(tab) {
     btn.textContent = 'Sign In';
   }
   document.getElementById('auth-error').classList.remove('visible');
+}
+
+async function handleGuestLogin() {
+  const btn = document.getElementById('auth-guest-btn');
+  const errEl = document.getElementById('auth-error');
+  btn.disabled = true;
+  btn.textContent = 'Please wait...';
+  errEl.classList.remove('visible');
+
+  try {
+    await loginAnonymously();
+  } catch (err) {
+    errEl.textContent = err?.message || 'Could not sign in as guest. Please try again.';
+    errEl.classList.add('visible');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Continue as Guest';
+  }
 }
 
 async function handleAuth(e) {

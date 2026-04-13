@@ -2,6 +2,7 @@ import {
   createUserWithEmailAndPassword,
   deleteUser,
   onAuthStateChanged,
+  signInAnonymously,
   signInWithEmailAndPassword,
   signOut,
   updateProfile as updateFirebaseProfile,
@@ -58,7 +59,7 @@ export async function register(email, password, displayName, language, username)
       const credential = await createUserWithEmailAndPassword(auth, email, password);
       createdUser = credential.user;
       await updateFirebaseProfile(createdUser, { displayName });
-      await persistProfile({ username, name: displayName, language });
+      await persistProfile({ username, name: displayName, language }, createdUser);
       return {
         uid: createdUser.uid,
         email: createdUser.email,
@@ -82,6 +83,15 @@ export async function register(email, password, displayName, language, username)
 export async function login(email, password) {
   try {
     const credential = await signInWithEmailAndPassword(auth, email, password);
+    return credential.user;
+  } catch (err) {
+    throw mapAuthError(err);
+  }
+}
+
+export async function loginAnonymously() {
+  try {
+    const credential = await signInAnonymously(auth);
     return credential.user;
   } catch (err) {
     throw mapAuthError(err);

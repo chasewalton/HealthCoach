@@ -32,6 +32,9 @@
   ],
   "hosting": {
     "public": "frontend/dist",
+    "predeploy": [
+      "npm run build --prefix frontend"
+    ],
     "ignore": [
       "firebase.json",
       "**/.*",

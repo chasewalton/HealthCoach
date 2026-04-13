@@ -22,7 +22,7 @@
   background: transparent;
   color: var(--neutral-800);
   font-family: var(--font-sans);
-  font-size: 16px;
+  font-size: calc(16px * var(--type-scale));
   font-weight: 600;
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
@@ -71,7 +71,7 @@
 }
 
 .home-landing-kicker {
-  font-size: 13px;
+  font-size: calc(13px * var(--type-scale));
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -81,7 +81,7 @@
 
 .home-landing-title {
   font-family: var(--font-serif);
-  font-size: clamp(36px, 8vw, 52px);
+  font-size: clamp(calc(36px * var(--type-scale)), 8vw, calc(52px * var(--type-scale)));
   font-weight: 600;
   line-height: 1.1;
   color: var(--neutral-900);
@@ -94,7 +94,7 @@
 }
 
 .home-landing-lead {
-  font-size: clamp(17px, 2.5vw, 20px);
+  font-size: clamp(calc(17px * var(--type-scale)), 2.5vw, calc(20px * var(--type-scale)));
   line-height: 1.6;
   color: var(--neutral-700);
   margin: 0 auto;
@@ -153,7 +153,7 @@
 
 .home-landing-feature-title {
   font-family: var(--font-sans);
-  font-size: 17px;
+  font-size: calc(17px * var(--type-scale));
   font-weight: 700;
   color: var(--neutral-900);
   margin: 0 0 8px;
@@ -161,7 +161,7 @@
 }
 
 .home-landing-feature-text {
-  font-size: 15px;
+  font-size: calc(15px * var(--type-scale));
   line-height: 1.6;
   color: var(--neutral-700);
   margin: 0;
@@ -189,7 +189,7 @@
   padding: 0 28px;
   border-radius: var(--radius-sm);
   font-family: var(--font-sans);
-  font-size: 15px;
+  font-size: calc(15px * var(--type-scale));
   font-weight: 700;
   letter-spacing: 0.01em;
   cursor: pointer;
@@ -230,7 +230,7 @@
 }
 
 .home-landing-disclaimer {
-  font-size: 13px;
+  font-size: calc(13px * var(--type-scale));
   line-height: 1.55;
   color: var(--neutral-500);
   text-align: center;

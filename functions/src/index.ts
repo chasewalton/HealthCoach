@@ -8,7 +8,9 @@ import profileRoutes from './routes/profile.js';
 import recordRoutes from './routes/record.js';
 import sessionsRoutes from './routes/sessions.js';
 
-setGlobalOptions({ maxInstances: 10 });
+// Preserve the Cloud Run invoker check override because this project cannot
+// use an allUsers IAM binding under the current organization policy.
+setGlobalOptions({ maxInstances: 10, preserveExternalChanges: true });
 
 const app = express();
 app.disable('x-powered-by');
@@ -27,6 +29,7 @@ app.use((_req, res) => {
 export const api = onRequest(
   {
     region: 'us-east1',
+    invoker: 'public',
     secrets: ['OPENROUTER_API_KEY', 'ADMIN_PASSWORD'],
   },
   app
