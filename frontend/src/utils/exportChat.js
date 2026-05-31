@@ -1,19 +1,28 @@
 import jsPDF from 'jspdf';
 import { Document, Packer, Paragraph, TextRun, HeadingLevel } from 'docx';
 import { saveAs } from 'file-saver';
+import { t, dateLocale } from '../i18n.js';
+import { stripInstructionMarker } from './format.js';
 
 function timestamp() {
   return new Date().toISOString().slice(0, 10);
 }
 
+function localeDateTime() {
+  return new Date().toLocaleString(dateLocale(), { dateStyle: 'medium', timeStyle: 'short' });
+}
+
 function formatPlainText(messages, metadata = {}) {
-  const header = `HealthCoach Conversation\n${'='.repeat(40)}`;
-  const date = `Date: ${new Date().toLocaleString()}`;
+  const header = `${t('export.header')}\n${'='.repeat(40)}`;
+  const date = `${t('export.date')} ${localeDateTime()}`;
   const recipient = metadata.recipientLabel
-    ? `Prepared for: ${metadata.recipientLabel}`
+    ? `${t('export.preparedFor')} ${metadata.recipientLabel}`
     : '';
   const body = messages
-    .map((m) => `${m.role === 'user' ? 'Patient' : 'HealthCoach'}: ${m.content}`)
+    .map(
+      (m) =>
+        `${m.role === 'user' ? t('export.rolePatient') : t('export.roleCoach')}: ${stripInstructionMarker(m.content)}`
+    )
     .join('\n\n');
   return [header, date, recipient, '', body].filter(Boolean).join('\n');
 }
@@ -46,16 +55,16 @@ export function downloadAsPdf(messages, metadata = {}) {
 
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(18);
-  doc.text('HealthCoach Conversation', margin, y);
+  doc.text(t('export.header'), margin, y);
   y += 10;
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(10);
   doc.setTextColor(120);
-  doc.text(`Generated ${new Date().toLocaleString()}`, margin, y);
+  doc.text(`${t('export.generated')} ${localeDateTime()}`, margin, y);
   y += 5;
   if (metadata.recipientLabel) {
-    doc.text(`Prepared for: ${metadata.recipientLabel}`, margin, y);
+    doc.text(`${t('export.preparedFor')} ${metadata.recipientLabel}`, margin, y);
     y += 5;
   }
   y += 6;
@@ -65,7 +74,7 @@ export function downloadAsPdf(messages, metadata = {}) {
 
   doc.setTextColor(0);
   for (const m of messages) {
-    const label = m.role === 'user' ? 'Patient' : 'HealthCoach';
+    const label = m.role === 'user' ? t('export.rolePatient') : t('export.roleCoach');
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(11);
     checkSpace(14);
@@ -74,7 +83,7 @@ export function downloadAsPdf(messages, metadata = {}) {
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
-    const lines = doc.splitTextToSize(m.content, usable);
+    const lines = doc.splitTextToSize(stripInstructionMarker(m.content), usable);
     for (const line of lines) {
       checkSpace(5);
       doc.text(line, margin, y);
@@ -89,12 +98,12 @@ export function downloadAsPdf(messages, metadata = {}) {
 export async function downloadAsDocx(messages, metadata = {}) {
   const children = [
     new Paragraph({
-      text: 'HealthCoach Conversation',
+      text: t('export.header'),
       heading: HeadingLevel.HEADING_1,
     }),
     new Paragraph({
       children: [
-        new TextRun({ text: `Generated ${new Date().toLocaleString()}`, color: '888888', size: 20 }),
+        new TextRun({ text: `${t('export.generated')} ${localeDateTime()}`, color: '888888', size: 20 }),
       ],
     }),
   ];
@@ -103,7 +112,7 @@ export async function downloadAsDocx(messages, metadata = {}) {
     children.push(
       new Paragraph({
         children: [
-          new TextRun({ text: `Prepared for: ${metadata.recipientLabel}`, color: '888888', size: 20 }),
+          new TextRun({ text: `${t('export.preparedFor')} ${metadata.recipientLabel}`, color: '888888', size: 20 }),
         ],
       }),
     );
@@ -112,14 +121,14 @@ export async function downloadAsDocx(messages, metadata = {}) {
   children.push(new Paragraph({ text: '' }));
 
   for (const m of messages) {
-    const label = m.role === 'user' ? 'Patient' : 'HealthCoach';
+    const label = m.role === 'user' ? t('export.rolePatient') : t('export.roleCoach');
     children.push(
       new Paragraph({
         children: [new TextRun({ text: label, bold: true, size: 24 })],
         spacing: { before: 240 },
       }),
       new Paragraph({
-        children: [new TextRun({ text: m.content, size: 22 })],
+        children: [new TextRun({ text: stripInstructionMarker(m.content), size: 22 })],
         spacing: { after: 120 },
       }),
     );

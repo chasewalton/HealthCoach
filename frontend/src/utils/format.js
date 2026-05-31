@@ -1,6 +1,44 @@
 const BULLET_LINE = /^(\s*)([-*])\s+(.*)$/;
 const ORDERED_LINE = /^(\s*)(\d+)\.\s+(.*)$/;
 
+/** Canonical: "What Your Provider Thought:". Legacy headers still parsed below. */
+const VISIT_RECAP_IMPRESSION_LABEL = 'What Your Provider Thought:';
+
+/** Regex fragment: provider impression section start (canonical or legacy). */
+const VISIT_RECAP_IMPRESSION_HEADER_RE =
+  `(?:what\\s+your\\s+provider\\s+thought|provider[\u0027\u2019]?s\\s+impression|visit\\s+summary)`;
+
+const visitRecapImpressionStartRe = new RegExp(
+  `(^|\\n)[ \\t]*${VISIT_RECAP_IMPRESSION_HEADER_RE}\\s*:[ \\t]*`,
+  'i'
+);
+
+const visitRecapHasImpressionSectionRe = new RegExp(
+  `${VISIT_RECAP_IMPRESSION_HEADER_RE}\\s*:`,
+  'i'
+);
+
+const visitRecapSectionHeaderLineRe = new RegExp(
+  `^(?:(?:your\\s+)?main\\s+concerns|next\\s+steps|${VISIT_RECAP_IMPRESSION_HEADER_RE})\\s*:`,
+  'im'
+);
+
+/**
+ * When the message is clearly the structured visit recap (main concerns + next steps),
+ * rewrite legacy "Provider's Impression:" (ASCII or curly apostrophe) to the canonical
+ * subheading so chat and summary panels match prompts. Scoped to recap-shaped copy only.
+ */
+function normalizeVisitRecapLegacyImpressionHeader(text) {
+  const s = String(text ?? '').replace(/\r\n/g, '\n');
+  if (!s.trim()) return s;
+  if (!/(?:^|\n)[ \t]*(?:your\s+)?main\s+concerns\s*:/im.test(s)) return s;
+  if (!/(?:^|\n)[ \t]*next\s+steps\s*:/im.test(s)) return s;
+  return s.replace(
+    /(^|\n)([ \t]*)provider[\u0027\u2019]s\s+impression\s*:/gim,
+    (_, pre, indent) => `${pre}${indent}What Your Provider Thought:`
+  );
+}
+
 /**
  * Matches a standalone section header like "Why you came in:" or "Your cholesterol:"
  * Must be 3-55 chars, letters/digits/spaces/hyphens/parens/apostrophes, ending with colon.
@@ -12,6 +50,25 @@ function applyInlineMarkdown(s) {
   return s
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
     .replace(/\*(.+?)\*/g, '<em>$1</em>');
+}
+
+/**
+ * Splits assistant copy into primary (conversation) + secondary (UI instructions).
+ * Rendered with `.chat-msg-text--instruction`; removed for model/export via {@link stripInstructionMarker}.
+ */
+export const MESSAGE_INSTRUCTION_SPLIT = '\n\n[HC_INSTRUCTION]\n\n';
+
+export function composeMessageWithInstruction(primary, instruction) {
+  const p = String(primary ?? '').trimEnd();
+  const i = String(instruction ?? '').trim();
+  if (!i) return p;
+  return p + MESSAGE_INSTRUCTION_SPLIT + i;
+}
+
+/** Replace instruction delimiter with a normal paragraph break for LLM history, exports, and plain text. */
+export function stripInstructionMarker(text) {
+  if (text == null || text === '') return '';
+  return String(text).split(MESSAGE_INSTRUCTION_SPLIT).join('\n\n');
 }
 
 function isHeaderLine(line) {
@@ -59,6 +116,70 @@ function splitTrailingQuestion(textLines) {
 }
 
 /**
+ * If an assistant message contains the three structured visit-recap sections
+ * ("Your Main Concerns:" [or legacy "Main concerns:"], "What Your Provider Thought:"
+ * [legacy "Provider's Impression:" or "Visit summary:"], "Next steps:"), enforce the
+ * canonical ordering (Your Main Concerns → What Your Provider Thought → Next steps) and
+ * convert a prose impression body into bullet points (one sentence per bullet).
+ * Prompts ask the model for this, but models sometimes reorder or write prose;
+ * older saved sessions may still use legacy headers.
+ */
+export function reorderAndBulletizeVisitRecap(text) {
+  const s = String(text ?? '').replace(/\r\n/g, '\n');
+  if (!s.trim()) return s;
+
+  const mainRe = /(^|\n)[ \t]*(?:your\s+)?main\s+concerns\s*:[ \t]*/i;
+  const nextRe = /(^|\n)[ \t]*next\s+steps\s*:[ \t]*/i;
+
+  const im = s.match(visitRecapImpressionStartRe);
+  const mm = s.match(mainRe);
+  const nm = s.match(nextRe);
+  if (!im || !mm || !nm) return s;
+
+  const iStart = im.index + (im[1] ? 1 : 0);
+  const mStart = mm.index + (mm[1] ? 1 : 0);
+  const nStart = nm.index + (nm[1] ? 1 : 0);
+
+  const bounds = [
+    { key: 'impression', start: iStart, label: VISIT_RECAP_IMPRESSION_LABEL },
+    { key: 'main', start: mStart, label: 'Your Main Concerns:' },
+    { key: 'next', start: nStart, label: 'Next steps:' },
+  ].sort((a, b) => a.start - b.start);
+
+  const firstStart = bounds[0].start;
+  const opener = s.slice(0, firstStart).replace(/\s+$/, '');
+
+  const bodies = {};
+  for (let i = 0; i < bounds.length; i++) {
+    const startIdx = bounds[i].start;
+    const endIdx = i + 1 < bounds.length ? bounds[i + 1].start : s.length;
+    const chunk = s.slice(startIdx, endIdx);
+    const headerEnd = chunk.indexOf(':');
+    const body = (headerEnd >= 0 ? chunk.slice(headerEnd + 1) : chunk).replace(/^\s*\n?/, '').trimEnd();
+    bodies[bounds[i].key] = body;
+  }
+
+  let impressionBody = bodies.impression;
+  const alreadyBulleted = /^\s*[-*]\s+/m.test(impressionBody);
+  if (!alreadyBulleted && impressionBody.trim()) {
+    const flat = impressionBody.replace(/\s*\n+\s*/g, ' ').trim();
+    const sentences = flat
+      .split(/(?<=[.!?])\s+(?=[A-Z"'(])/)
+      .map((x) => x.trim())
+      .filter(Boolean);
+    const items = sentences.length ? sentences : [flat];
+    impressionBody = items.map((x) => `- ${x}`).join('\n');
+  }
+
+  const parts = [];
+  if (opener.trim()) parts.push(opener.trim());
+  parts.push(`Your Main Concerns:\n${bodies.main}`);
+  parts.push(`${VISIT_RECAP_IMPRESSION_LABEL}\n${impressionBody}`);
+  parts.push(`Next steps:\n${bodies.next}`);
+  return parts.join('\n\n');
+}
+
+/**
  * Groups consecutive lines into semantic blocks: section-headers, bullet lists,
  * ordered lists, and paragraph text.  Then wraps header + following content into
  * visual "section cards" so patients see clear groupings instead of a wall of text.
@@ -66,7 +187,19 @@ function splitTrailingQuestion(textLines) {
 export function formatMessage(text) {
   if (text == null || text === '') return '';
 
-  const escaped = escapeHtml(String(text));
+  const normalized = reorderAndBulletizeVisitRecap(
+    normalizeVisitRecapLegacyImpressionHeader(String(text))
+  );
+  const instrAt = normalized.indexOf(MESSAGE_INSTRUCTION_SPLIT);
+  if (instrAt !== -1) {
+    const primaryPart = normalized.slice(0, instrAt);
+    const instructionPart = normalized.slice(instrAt + MESSAGE_INSTRUCTION_SPLIT.length);
+    const headHtml = formatMessage(primaryPart);
+    const tailHtml = formatInstructionParagraphs(instructionPart);
+    return headHtml + tailHtml;
+  }
+
+  const escaped = escapeHtml(normalized);
   if (!escaped.trim()) return '';
 
   const lines = escaped.split('\n');
@@ -197,6 +330,60 @@ function renderSingleBlock(block) {
   }
 }
 
+/**
+ * Removes trailing question line(s) after a structured visit recap (includes a
+ * "What Your Provider Thought:" or legacy "Provider's Impression:" / "Visit summary:" section).
+ * Models often still append engagement questions (e.g. "What part of this visit…") despite prompts.
+ */
+export function stripTrailingVisitRecapEngagementQuestion(text) {
+  let s = String(text ?? '').replace(/\r\n/g, '\n').trimEnd();
+  if (!s) return s;
+  if (!visitRecapHasImpressionSectionRe.test(s)) return s;
+
+  for (let guard = 0; guard < 8; guard++) {
+    const t = s.trimEnd();
+    const idx = t.lastIndexOf('\n\n');
+    if (idx === -1) break;
+    const tail = t.slice(idx + 2).trim();
+    if (!tail.endsWith('?')) break;
+    if (tail.length > 600) break;
+    if (visitRecapSectionHeaderLineRe.test(tail)) break;
+    s = t.slice(0, idx).trimEnd();
+  }
+
+  for (let guard = 0; guard < 4; guard++) {
+    const t = s.trimEnd();
+    const m = t.match(/\n([^\n]+\?)\s*$/);
+    if (!m) break;
+    const line = m[1].trim();
+    if (line.length > 400) break;
+    if (visitRecapSectionHeaderLineRe.test(line)) break;
+    s = t.slice(0, m.index).trimEnd();
+  }
+
+  // Exact known closing (with or without a newline before it)
+  s = s.replace(/\s*\n+What part of this visit has been on your mind the most\?\s*$/i, '');
+  s = s.replace(/\s+What part of this visit has been on your mind the most\?\s*$/i, '');
+
+  return s.trimEnd();
+}
+
 export function escapeHtml(str) {
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function formatInstructionParagraphs(text) {
+  const raw = String(text ?? '').trim();
+  if (!raw) return '';
+  const paragraphs = raw
+    .split(/\n\n+/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+  return paragraphs
+    .map((para) => {
+      const escaped = escapeHtml(para);
+      const inner = escaped.split('\n').map((line) => applyInlineMarkdown(line)).join('<br>');
+      return `<p class="chat-msg-text chat-msg-text--instruction">${inner}</p>`;
+    })
+    .join('');
 }

@@ -2,6 +2,8 @@ import { authenticateAdmin, saveAdminPrompts } from '../../api/admin.js';
 import { ApiError } from '../../api/client.js';
 import { showToast } from '../Toast.js';
 import { openModal, closeModal, closeModalOnOverlay } from './modalHelpers.js';
+import { t } from '../../i18n.js';
+import { escapeHtml } from '../../utils/format.js';
 
 const LOGIN_ID = 'modal-admin-login';
 const EDITOR_ID = 'modal-admin';
@@ -102,17 +104,17 @@ export function render() {
     <div class="modal" style="max-width:360px">
       <div class="modal-drag"></div>
       <div class="modal-header">
-        <div class="modal-title">Admin Access</div>
+        <div class="modal-title">${escapeHtml(t('admin.accessTitle'))}</div>
         <button class="modal-close" data-close="${LOGIN_ID}">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
       <div class="form-group" style="margin-bottom:14px">
-        <label class="form-label">Password</label>
-        <input class="form-input" id="admin-password-input" type="password" placeholder="Enter admin password" />
+        <label class="form-label">${escapeHtml(t('admin.password'))}</label>
+        <input class="form-input" id="admin-password-input" type="password" placeholder="${escapeHtml(t('admin.passwordPh'))}" />
       </div>
       <div id="admin-login-error" class="auth-error" style="margin-bottom:12px"></div>
-      <button class="btn-primary" id="admin-login-btn">Enter</button>
+      <button class="btn-primary" id="admin-login-btn">${escapeHtml(t('admin.enter'))}</button>
     </div>
   </div>
 
@@ -121,9 +123,9 @@ export function render() {
       <div class="modal-drag"></div>
       <div class="modal-header">
         <div class="modal-header-text">
-          <div class="modal-title">Prompt editor</div>
+          <div class="modal-title">${escapeHtml(t('admin.editorTitle'))}</div>
           <p class="modal-subtitle admin-prompt-intro">
-            Each option matches a backend key: chat prompts use <code>mode</code> + <code>path</code> on <code>/api/chat</code>; summaries use <code>/api/summary</code>. The landing-page dashboard uses a separate default prompt in code (<code>DASHBOARD_PROMPT</code>), not listed here.
+            ${escapeHtml(t('admin.intro'))}
           </p>
         </div>
         <button class="modal-close" data-close="${EDITOR_ID}">
@@ -131,7 +133,7 @@ export function render() {
         </button>
       </div>
 
-      <label class="form-label" for="admin-prompt-select">Which system prompt</label>
+      <label class="form-label" for="admin-prompt-select">${escapeHtml(t('admin.whichPrompt'))}</label>
       <select class="admin-prompt-select" id="admin-prompt-select" aria-describedby="admin-prompt-context">
         <optgroup label="Live chat — Last Visit Review">
           <option value="review_guided">Guided walkthrough (visit review, paced)</option>
@@ -153,13 +155,13 @@ export function render() {
 
       <div class="admin-prompt-context" id="admin-prompt-context" aria-live="polite"></div>
 
-      <label class="form-label admin-prompt-textarea-label" for="admin-prompt-textarea">Prompt text</label>
+      <label class="form-label admin-prompt-textarea-label" for="admin-prompt-textarea">${escapeHtml(t('admin.promptText'))}</label>
       <textarea class="admin-prompt-area" id="admin-prompt-textarea" spellcheck="false" rows="18"></textarea>
 
       <div class="admin-hint" id="admin-hint-text"></div>
       <div class="admin-actions">
-        <button class="btn-primary" style="flex:2;margin-top:0" id="admin-save-btn">Save changes</button>
-        <button class="btn-outline" style="flex:1;margin-top:0" id="admin-reset-btn">Reset to default</button>
+        <button class="btn-primary" style="flex:2;margin-top:0" id="admin-save-btn">${escapeHtml(t('admin.save'))}</button>
+        <button class="btn-outline" style="flex:1;margin-top:0" id="admin-reset-btn">${escapeHtml(t('admin.reset'))}</button>
       </div>
     </div>
   </div>`;
@@ -205,7 +207,7 @@ async function checkPassword() {
     closeModal(LOGIN_ID);
     openEditor();
   } catch (err) {
-    errEl.textContent = (err instanceof ApiError) ? err.message : 'Could not connect to server.';
+    errEl.textContent = (err instanceof ApiError) ? err.message : t('admin.connectError');
     errEl.classList.add('visible');
   }
 }
@@ -219,7 +221,7 @@ function setContextHtml(key) {
   container.innerHTML = `
     <div class="admin-prompt-context-title">${meta.title}</div>
     <p class="admin-prompt-context-lead">${meta.lead}</p>
-    <p class="admin-prompt-context-label">When this prompt is used</p>
+    <p class="admin-prompt-context-label">${escapeHtml(t('admin.whenUsed'))}</p>
     <ul class="admin-prompt-context-list">${steps}</ul>
   `;
 }
@@ -228,7 +230,7 @@ function updateHint(key) {
   const meta = PROMPT_META[key];
   const hintEl = document.getElementById('admin-hint-text');
   hintEl.innerHTML = meta
-    ? `<span class="admin-hint-label">Placeholders</span> ${meta.placeholders}`
+    ? `<span class="admin-hint-label">${escapeHtml(t('admin.placeholdersLabel'))}</span> ${meta.placeholders}`
     : '';
 }
 
@@ -254,23 +256,23 @@ async function savePrompt() {
   _adminPrompts[_adminCurrentKey] = document.getElementById('admin-prompt-textarea').value;
   try {
     await saveAdminPrompts(_adminPassword, _adminPrompts);
-    showToast('Prompts saved');
+    showToast(t('admin.savedToast'));
   } catch (_) {
-    showToast('Could not save -- check connection.');
+    showToast(t('admin.saveError'));
   }
 }
 
 async function resetPrompt() {
   const label = PROMPT_META[_adminCurrentKey]?.title || _adminCurrentKey;
-  if (!confirm(`Reset "${label}" to the built-in default? This cannot be undone.`)) return;
+  if (!window.confirm(t('admin.resetConfirm', { label }))) return;
   _adminPrompts[_adminCurrentKey] = '';
   try {
     await saveAdminPrompts(_adminPassword, { [_adminCurrentKey]: '' });
     const data = await authenticateAdmin(_adminPassword);
     _adminPrompts = data.prompts;
     document.getElementById('admin-prompt-textarea').value = _adminPrompts[_adminCurrentKey] || '';
-    showToast('Reset to default');
+    showToast(t('admin.resetToast'));
   } catch (_) {
-    showToast('Could not reset -- check connection.');
+    showToast(t('admin.resetError'));
   }
 }

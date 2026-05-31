@@ -1,5 +1,7 @@
 import { VERSION, CHANGELOG } from '../../versionInfo.js';
 import { openModal, closeModal, closeModalOnOverlay } from './modalHelpers.js';
+import { t } from '../../i18n.js';
+import { escapeHtml } from '../../utils/format.js';
 
 const MODAL_ID = 'modal-version-changelog';
 
@@ -14,12 +16,12 @@ export function setCallbacks(cbs) {
 function buildChangelogHtml() {
   return CHANGELOG.map((entry) => {
     const dateLine = entry.date
-      ? `<div class="version-changelog-date">${entry.date}</div>`
+      ? `<div class="version-changelog-date">${escapeHtml(entry.date)}</div>`
       : '';
-    const items = entry.changes.map((c) => `<li>${c}</li>`).join('');
+    const items = entry.changes.map((c) => `<li>${escapeHtml(c)}</li>`).join('');
     return `
       <article class="version-changelog-block" aria-labelledby="changelog-${entry.version.replace(/\./g, '-')}">
-        <h3 class="version-changelog-version" id="changelog-${entry.version.replace(/\./g, '-')}">${entry.version}</h3>
+        <h3 class="version-changelog-version" id="changelog-${entry.version.replace(/\./g, '-')}">${escapeHtml(entry.version)}</h3>
         ${dateLine}
         <ul class="version-changelog-list">${items}</ul>
       </article>`;
@@ -33,15 +35,15 @@ export function render() {
       <div class="modal-drag"></div>
       <div class="modal-header version-changelog-header">
         <div class="modal-header-text">
-          <div class="modal-title">Release notes</div>
-          <p class="modal-subtitle version-changelog-subtitle">You are on <strong>${VERSION}</strong></p>
+          <div class="modal-title">${escapeHtml(t('version.title'))}</div>
+          <p class="modal-subtitle version-changelog-subtitle">${escapeHtml(t('version.subtitle'))} <strong>${escapeHtml(VERSION)}</strong></p>
         </div>
         <div class="version-changelog-header-end">
-          <button type="button" class="btn-outline version-changelog-admin-btn" id="version-changelog-admin-btn" title="Admin Access">
+          <button type="button" class="btn-outline version-changelog-admin-btn" id="version-changelog-admin-btn" title="${escapeHtml(t('version.admin'))}">
             ${ADMIN_ICON_SVG}
-            <span>Admin Access</span>
+            <span>${escapeHtml(t('version.admin'))}</span>
           </button>
-          <button type="button" class="modal-close" data-close="${MODAL_ID}" aria-label="Close">
+          <button type="button" class="modal-close" data-close="${MODAL_ID}" aria-label="${escapeHtml(t('version.close'))}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
         </div>

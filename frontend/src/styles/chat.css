@@ -41,6 +41,10 @@
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .chat-header-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.chat-header-actions .icon-btn:disabled {
+  opacity: 0.35;
+  pointer-events: none;
+}
 
 /* Progress bar */
 .chat-progress {
@@ -150,6 +154,15 @@
   color: var(--neutral-900);
 }
 
+.msg-journey-graphic {
+  display: block;
+  width: 100%;
+  max-width: 480px;
+  height: auto;
+  margin: 12px auto 2px;
+  border-radius: var(--radius-md, 8px);
+}
+
 /* --- Message content typography --- */
 .chat-msg-text {
   margin: 0 0 0.7em;
@@ -157,6 +170,21 @@
 }
 .chat-msg-text:last-child {
   margin-bottom: 0;
+}
+
+/* Secondary line(s): how to use the UI; smaller than main assistant copy. */
+.chat-msg-text--instruction {
+  font-size: 0.88em;
+  line-height: 1.55;
+  color: var(--neutral-600);
+  margin-top: 0.35em;
+  margin-bottom: 0;
+}
+.chat-msg-text + .chat-msg-text--instruction {
+  margin-top: 0.3em;
+}
+.chat-msg-text:has(+ .chat-msg-text--instruction) {
+  margin-bottom: 0.35em;
 }
 
 /* --- Section cards within assistant messages --- */
@@ -255,6 +283,7 @@
   color: white;
   border-radius: var(--radius-lg) 4px var(--radius-lg) var(--radius-lg);
   box-shadow: 0 4px 12px rgba(14,159,140,0.25);
+  white-space: pre-wrap;
 }
 
 /* User message bubble wrapper (holds bubble + edit button) */

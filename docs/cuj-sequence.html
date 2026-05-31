@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HealthCoach CUJ — Sequence Diagram</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Lora:wght@500;600;700&display=swap" rel="stylesheet">
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+  mermaid.initialize({
+    startOnLoad: false,
+    theme: 'base',
+    themeVariables: {
+      fontFamily: '"Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, sans-serif',
+      fontSize: '13px',
+      primaryColor: '#CCFBF0',
+      primaryBorderColor: '#0E9F8C',
+      primaryTextColor: '#1C1917',
+      secondaryColor: '#F5F5F4',
+      secondaryBorderColor: '#E7E5E4',
+      tertiaryColor: '#FEF3C7',
+      lineColor: '#78716C',
+      textColor: '#292524',
+      noteBkgColor: '#F0FDF9',
+      noteBorderColor: '#0E9F8C',
+      noteTextColor: '#083D37',
+      actorBkg: '#FFFFFF',
+      actorBorder: '#0E9F8C',
+      actorTextColor: '#083D37',
+      activationBkgColor: '#CCFBF0',
+      activationBorderColor: '#0A7A6E',
+      signalColor: '#292524',
+      labelBoxBkgColor: '#F5F5F4',
+      labelBoxBorderColor: '#D6D3D1',
+      labelTextColor: '#44403C',
+      loopTextColor: '#44403C',
+      sequenceNumberColor: '#FFFFFF',
+    },
+    sequence: {
+      diagramMarginX: 20,
+      diagramMarginY: 20,
+      actorMargin: 80,
+      width: 180,
+      height: 50,
+      boxMargin: 8,
+      boxTextMargin: 8,
+      noteMargin: 12,
+      messageMargin: 40,
+      mirrorActors: true,
+      useMaxWidth: false,
+      rightAngles: false,
+      showSequenceNumbers: true,
+      wrap: true,
+      wrapPadding: 15,
+    },
+  });
+
+  const phases = {
+    phase0: `
+sequenceDiagram
+    actor P as Patient
+    participant UI as HealthCoach UI
+    participant Bot as Chat Bot
+    participant LLM as LLM (OpenRouter)
+    participant FS as Firestore
+    participant EHR as EHR Context
+
+    rect rgba(14,165,233,0.08)
+    Note over P,EHR: PHASE 0 -- Intro and Orientation
+
+    rect rgba(14,165,233,0.06)
+    Note left of P: 0.1 Land on study page
+    P->>UI: Opens public study link
+    UI->>EHR: Load enrolled patient's visit note
+    EHR-->>UI: Visit note (loaded at enrollment)
+    activate UI
+    UI-->>P: Welcome banner + phase nav<br/>(Phase 0 active, 1-3 disabled)
+    deactivate UI
+    end
+
+    rect rgba(14,165,233,0.06)
+    Note left of P: 0.2 Plain-language privacy
+    Bot->>P: Privacy disclosure (2 sentences):<br/>how data is used, who can see it
+    Bot->>P: "If you have more questions<br/>about this anytime, just ask me."
+
+    opt Patient asks privacy questions
+        P->>Bot: Privacy follow-up question
+        Bot->>LLM: Privacy question request
+        LLM-->>Bot: Privacy response
+        Bot-->>P: Answer
+        UI->>FS: Log privacy exchange (not surfaced to clinician)
+    end
+    end
+
+    rect rgba(14,165,233,0.06)
+    Note left of P: 0.3 Setup: language, name, voice
+    Bot->>P: "English or Spanish?"
+    P->>UI: Selects language
+    UI->>UI: Update interface language in place
+    UI->>FS: Save language
+
+    Bot->>P: "What would you like me to call you?"
+    P->>Bot: Preferred name
+    UI->>FS: Save preferred_name
+
+    Bot->>P: Voice options
+    UI-->>P: Mic button appears on chat bar (Whisper STT)
+    UI-->>P: Read-aloud toggle in header (Realtime TTS)
+    P->>UI: Voice preferences
+    UI->>FS: Save voice_in_enabled, read_aloud_enabled
+    end
+
+    rect rgba(14,165,233,0.06)
+    Note left of P: 0.4 Screen orientation
+    activate UI
+    UI->>P: Guided highlight overlay
+    Bot->>P: Walks through: top nav, chat area,<br/>input + mic
+    Bot->>P: "We'll track our progress on<br/>the bar above."
+    deactivate UI
+    end
+
+    rect rgba(245,158,11,0.12)
+    Note left of P: 0.5 Ready button [FORCING FUNCTION]
+    UI-->>P: "I'm ready" button appears
+    P->>UI: Clicks "I'm ready"
+    activate UI
+    UI->>UI: Animate Phase 0 to Phase 1 transition
+    UI-->>P: Scroll to Phase 1 focus
+    deactivate UI
+    end
+
+    end
+`,
+    phase1: `
+sequenceDiagram
+    actor P as Patient
+    participant UI as HealthCoach UI
+    participant Bot as Chat Bot
+    participant LLM as LLM (OpenRouter)
+    participant FS as Firestore
+    participant EHR as EHR Context
+
+    rect rgba(14,159,140,0.08)
+    Note over P,EHR: PHASE 1 -- Review Last Visit
+
+    rect rgba(14,159,140,0.06)
+    Note left of P: 1.1 Show last-visit summary
+    UI->>LLM: Generate narrative summary<br/>(EHR visit note context)
+    activate LLM
+    LLM-->>UI: AI-generated summary text
+    deactivate LLM
+    Bot->>P: "Let me walk you through your<br/>visit on [date] with Dr. [name]."
+    activate UI
+    UI-->>P: Render inline summary card
+    deactivate UI
+    UI->>FS: Persist last_visit_summary
+    end
+
+    rect rgba(139,92,246,0.08)
+    Note left of P: 1.2 PAIR eval [SIDE FRAME]
+    activate UI
+    UI-->>P: Side frame opens (right of chat)
+    Note right of P: Chat remains scrollable<br/>while frame is open
+    Bot->>P: "Did you notice any possible<br/>mistakes in this summary?"
+    deactivate UI
+
+    alt Patient found errors
+        P->>Bot: Describes errors (free text)
+    else No errors
+        P->>Bot: No
+    end
+
+    Bot->>P: "Anything important missing?"
+    alt Patient found omissions
+        P->>Bot: Describes omissions (free text)
+    else Nothing missing
+        P->>Bot: No
+    end
+
+    UI->>FS: Save errors and omissions<br/>tagged to last_visit_summary
+    end
+
+    rect rgba(14,159,140,0.06)
+    Note left of P: 1.3 Free Q and A [CONCURRENT with 1.1-1.2]
+    Note right of P: Available throughout<br/>entire Phase 1
+
+    loop Patient asks questions about the summary
+        P->>Bot: Question about visit summary
+        Bot->>LLM: Query with EHR context
+        activate LLM
+        LLM-->>Bot: Response
+        deactivate LLM
+        Bot-->>P: Answer from EHR context
+
+        alt Clinical question detected
+            Bot-->>P: "That's a great question for<br/>your provider at your next visit."
+        end
+    end
+
+    alt LLM uncertainty triggers nudge
+        LLM-->>Bot: Uncertainty score above threshold
+        Bot->>P: "Ready to move on?"
+    else Patient advances manually
+        P->>UI: Clicks Continue or Phase 2 nav
+    end
+    end
+
+    UI->>UI: Close side frame
+    UI->>UI: Transition Phase 1 to Phase 2
+
+    end
+`,
+    phase2: `
+sequenceDiagram
+    actor P as Patient
+    participant UI as HealthCoach UI
+    participant Bot as Chat Bot
+    participant LLM as LLM (OpenRouter)
+    participant FS as Firestore
+    participant EHR as EHR Context
+
+    rect rgba(239,99,71,0.07)
+    Note over P,EHR: PHASE 2 -- Prepare for Next Visit
+
+    rect rgba(239,99,71,0.05)
+    Note left of P: 2.0 Re-center
+    Bot->>P: "Now let's get you ready<br/>for your next visit."
+    end
+
+    rect rgba(239,99,71,0.05)
+    Note left of P: 2.1 Next-steps check
+    Bot->>P: "Have you had any challenges with<br/>the next steps from your last visit?"
+
+    alt No challenges
+        P->>Bot: No
+        Bot-->>P: Acknowledge, move on
+
+    else Has challenges
+        P->>Bot: Describes challenges
+        Bot->>P: "I'm sorry to hear that.<br/>Would you like help?"
+
+        opt Patient wants help
+            Bot->>P: Probe barriers<br/>(scheduling, transport, cost)
+            P->>Bot: Details or declines
+            Bot->>LLM: Context for barrier assistance
+            LLM-->>Bot: Assistance response
+            Bot-->>P: Help with barriers
+        end
+    end
+
+    UI->>FS: Save next_steps_status,<br/>barriers, help_requested
+    end
+
+    rect rgba(239,99,71,0.05)
+    Note left of P: 2.2 Priorities (up to 3)
+    UI->>LLM: Generate patient-specific<br/>checkbox options from note
+    activate LLM
+    LLM-->>UI: Contextual priority options<br/>(no hard-coded items)
+    deactivate LLM
+
+    Bot->>P: "What are the most important<br/>things you want to talk about<br/>with your provider?"
+    activate UI
+    UI-->>P: Checkbox group + free text input
+    deactivate UI
+
+    loop Until 3 items or patient signals done
+        P->>UI: Checks option or types priority
+        Bot-->>P: "Got it, [item].<br/>Anything else, or ready to move on?"
+    end
+
+    activate UI
+    UI-->>P: Show running list of priorities
+    deactivate UI
+    Bot->>P: "Does this look right?"
+    Note right of P: Allow reorder/edit.<br/>Set matters, order does not.
+    P->>UI: Confirms priorities
+    UI->>FS: Save priorities[] (1-3 items)
+    end
+
+    rect rgba(239,99,71,0.05)
+    Note left of P: 2.3 How have you been
+    Bot->>P: "Over the last six months, have<br/>you had any of the following?"
+    activate UI
+    UI-->>P: 4 clinical-flag checkboxes:<br/>New/worsening symptoms,<br/>Tests or procedures,<br/>Urgent care / ED / hospital,<br/>Medication changes
+    P->>UI: Checks applicable flags
+    deactivate UI
+
+    Bot->>P: "Anything else you want to share<br/>about how you've been?"
+    P->>Bot: Free-text narrative
+
+    Note right of FS: GUARDRAIL: Capture verbatim.<br/>No clinical drill-down.<br/>No triage. No diagnosis.
+    UI->>FS: Save health_since_last[] + narrative
+    end
+
+    rect rgba(239,99,71,0.05)
+    Note left of P: 2.4 Concerns and what is going well
+    Bot->>P: 1. "Concerns about your medications?"
+    P->>Bot: Response
+    UI->>FS: Save concerns_meds
+
+    Bot->>P: 2. "Concerns about communication<br/>with your care team?"
+    P->>Bot: Response
+    UI->>FS: Save concerns_comms
+
+    Bot->>P: 3. "Concerns about tests or<br/>referrals to specialists?"
+    P->>Bot: Response
+    UI->>FS: Save concerns_tests
+
+    Bot->>P: 4. "Is something going<br/>particularly well in your care?"
+    Note right of P: Deliberate balance point:<br/>gives provider something<br/>to celebrate
+    P->>Bot: Response
+    UI->>FS: Save going_well
+    end
+
+    rect rgba(239,99,71,0.05)
+    Note left of P: 2.5 Questions for provider
+    Bot->>P: "Do you have any questions you'd<br/>like to ask your provider?"
+
+    alt Patient lists questions
+        P->>Bot: Questions for provider
+    else Patient unsure or asks for help
+        Bot->>P: "Would you like me to<br/>suggest some questions?"
+        P->>Bot: Yes
+        Bot->>LLM: Generate context-aware questions<br/>(priorities + health_since_last + EHR)
+        activate LLM
+        Note right of LLM: Cross-reference patient's<br/>concerns. Avoid generic<br/>disease-level questions.
+        LLM-->>Bot: Suggested questions
+        deactivate LLM
+        Bot-->>P: Personalized question suggestions
+    end
+
+    opt Patient wants SMS
+        Bot->>P: "Would you like me to text<br/>these questions to your phone?"
+        P->>Bot: Phone number
+        UI->>P: SMS sent with question list
+        UI->>FS: Save phone, sms_sent
+    end
+
+    UI->>FS: Save questions_for_provider[]
+    end
+
+    rect rgba(245,158,11,0.12)
+    Note left of P: 2.6 Anything else [FORCING FUNCTION]
+    Bot->>P: "Anything else you want to make<br/>sure happens at this visit?"
+    P->>Bot: Visit requests (refill, note, etc.)
+    UI->>FS: Save visit_requests[]
+    UI-->>P: "Ready to summarize?" button
+    P->>UI: Clicks "Ready to summarize"
+    UI->>UI: Transition Phase 2 to Phase 3
+    end
+
+    end
+`,
+    phase3: `
+sequenceDiagram
+    actor P as Patient
+    participant UI as HealthCoach UI
+    participant Bot as Chat Bot
+    participant LLM as LLM (OpenRouter)
+    participant FS as Firestore
+    participant EHR as EHR Context
+
+    rect rgba(139,92,246,0.08)
+    Note over P,EHR: PHASE 3 -- Summary and Approval
+
+    rect rgba(139,92,246,0.06)
+    Note left of P: 3.1 Generate pre-note
+    activate UI
+    UI-->>P: Loading indicator
+    deactivate UI
+
+    UI->>LLM: Generate pre-note from all state:<br/>priorities, health_since_last,<br/>concerns, going_well,<br/>questions, visit_requests
+    activate LLM
+    LLM-->>UI: Structured pre-note
+    deactivate LLM
+
+    Bot->>P: "Here's a summary of what<br/>we talked about."
+    activate UI
+    UI-->>P: Render inline pre-note card
+    deactivate UI
+    UI->>FS: Save prenote_v1
+    end
+
+    rect rgba(139,92,246,0.06)
+    Note left of P: 3.2 PAIR eval embedded [SIDE FRAME]
+    activate UI
+    UI-->>P: Side frame opens (same as 1.2)
+    Note right of P: Pre-note stays visible<br/>on the left
+    deactivate UI
+
+    Bot->>P: PAIR rubric questions:<br/>errors, omissions, clarity
+    P->>UI: Ratings and flags
+    UI->>FS: Save prenote_pair_v1
+
+    P->>UI: Submit in frame
+    end
+
+    rect rgba(239,99,71,0.06)
+    Note left of P: 3.3 Edit and regenerate [LOOP max 3]
+    loop Up to N=3 regenerations
+        LLM->>UI: Use PAIR feedback to regenerate
+        Bot->>P: "Based on what you flagged,<br/>I've updated the summary."
+        activate UI
+        UI-->>P: Render updated prenote_vN
+        deactivate UI
+        Bot->>P: "Anything else you want<br/>to edit or add?"
+
+        alt Patient requests more changes
+            P->>Bot: Edit requests
+            UI->>FS: Append to edit_history
+        else Patient satisfied
+            P->>Bot: Looks good
+        end
+
+        UI->>FS: Save prenote_vN
+    end
+    end
+
+    rect rgba(139,92,246,0.06)
+    Note left of P: 3.4 Confirm
+    Bot->>P: "Is the summary all set now?"
+    P->>UI: Confirms
+    UI->>FS: Save prenote_final +<br/>confirmation_timestamp
+    end
+
+    rect rgba(139,92,246,0.06)
+    Note left of P: 3.5 Sharing preferences
+    Bot->>P: "Your conversation isn't shared<br/>unless you choose to. Who would<br/>you want a copy sent to?"
+    Note right of P: IRB framing: "In the future,<br/>if it were possible."<br/>Nothing actually transmitted.
+    activate UI
+    UI-->>P: Checkbox group:<br/>My provider,<br/>Me,<br/>Someone else (free text)
+    deactivate UI
+    P->>UI: Sharing selections
+    UI->>FS: Save share_prefs[],<br/>share_other_recipient
+    UI->>UI: Transition Phase 3 to Phase 4
+    end
+
+    end
+`,
+    phase4: `
+sequenceDiagram
+    actor P as Patient
+    participant UI as HealthCoach UI
+    participant Bot as Chat Bot
+    participant LLM as LLM (OpenRouter)
+    participant FS as Firestore
+    participant EvalDB as Evaluation DB
+
+    rect rgba(245,158,11,0.1)
+    Note over P,EvalDB: PHASE 4 -- Handoff to Evaluation
+
+    rect rgba(245,158,11,0.06)
+    Note left of P: 4.1 Completion
+    activate UI
+    UI-->>P: Visual celebration<br/>(balloons and fireworks)
+    deactivate UI
+    Note right of P: Clear break from chat
+
+    Bot->>P: "You're done with HealthCoach.<br/>Thank you, this was really helpful."
+    Bot->>P: Reminder -- this is a study and<br/>what was shared is not used in care today.
+    UI->>FS: Save healthcoach_complete_timestamp
+    end
+
+    rect rgba(245,158,11,0.06)
+    Note left of P: 4.2 Transition to evaluation sphere
+    UI->>UI: Navigate to new screen<br/>(separate from chat)
+    Note right of EvalDB: Coaching data and eval data<br/>kept in SEPARATE stores
+
+    activate UI
+    UI-->>P: Evaluation screen:<br/>Implementation metrics,<br/>Safety and quality (full PAIR),<br/>Engagement, Demographics
+    deactivate UI
+
+    P->>UI: Completes evaluation
+    UI->>EvalDB: Write all evaluation responses
+    Note right of P: Recommendation: move some<br/>demographics to Phase 0<br/>to reduce end-session burden
+    end
+
+    end
+`
+  };
+
+  async function renderPhase(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const code = phases[id];
+    if (!code) return;
+    try {
+      const { svg } = await mermaid.render(`${id}-svg`, code.trim());
+      el.innerHTML = svg;
+      const svgEl = el.querySelector('svg');
+      if (svgEl) {
+        svgEl.style.maxWidth = 'none';
+        svgEl.style.height = 'auto';
+      }
+    } catch (e) {
+      el.innerHTML = `<p style="color:#D4512F;padding:1rem;">Render error: ${e.message}</p>`;
+      console.error(id, e);
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', async () => {
+    for (const id of Object.keys(phases)) {
+      await renderPhase(id);
+    }
+
+    // Phase nav
+    const btns = document.querySelectorAll('.phase-nav button');
+    btns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const t = document.getElementById(btn.dataset.target);
+        if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    });
+
+    // Intersection observer for active nav
+    const sections = document.querySelectorAll('.phase-section');
+    const obs = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          btns.forEach(b => b.classList.toggle('active', b.dataset.target === e.target.id));
+        }
+      });
+    }, { rootMargin: '-100px 0px -50% 0px' });
+    sections.forEach(s => obs.observe(s));
+  });
+</script>
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+  :root {
+    --teal-50:  #F0FDF9;
+    --teal-100: #CCFBF0;
+    --teal-200: #99F6E0;
+    --teal-300: #5EEAD4;
+    --teal-400: #2DD4BF;
+    --teal-500: #0E9F8C;
+    --teal-600: #0A7A6E;
+    --teal-700: #0A6259;
+    --teal-900: #083D37;
+    --coral-400: #F5856B;
+    --coral-500: #EF6347;
+    --coral-600: #D4512F;
+    --amber-400: #FBBF24;
+    --amber-500: #F59E0B;
+    --violet-400: #A78BFA;
+    --violet-500: #8B5CF6;
+    --violet-600: #7C3AED;
+    --sky-400: #38BDF8;
+    --sky-500: #0EA5E9;
+    --sky-600: #0284C7;
+    --neutral-50:  #FAFAF9;
+    --neutral-100: #F5F5F4;
+    --neutral-200: #E7E5E4;
+    --neutral-300: #D6D3D1;
+    --neutral-400: #A8A29E;
+    --neutral-500: #78716C;
+    --neutral-600: #57534E;
+    --neutral-700: #44403C;
+    --neutral-800: #292524;
+    --neutral-900: #1C1917;
+    --font-body: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-serif: 'Lora', Georgia, serif;
+  }
+
+  html { font-size: 15px; scroll-behavior: smooth; }
+
+  body {
+    font-family: var(--font-body);
+    background: #F8F8F7;
+    color: var(--neutral-800);
+    line-height: 1.6;
+  }
+
+  /* ---- HEADER ---- */
+  .page-header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(248,248,247,0.88);
+    backdrop-filter: blur(20px) saturate(1.6);
+    -webkit-backdrop-filter: blur(20px) saturate(1.6);
+    border-bottom: 1px solid var(--neutral-200);
+    padding: 1rem 2rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+  .page-header h1 {
+    font-family: var(--font-serif);
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--teal-700);
+    letter-spacing: -0.01em;
+  }
+  .page-header .badge {
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 0.2em 0.6em;
+    border-radius: 999px;
+    background: var(--teal-100);
+    color: var(--teal-700);
+  }
+  .page-header .type-label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--neutral-500);
+    margin-left: auto;
+  }
+
+  /* ---- PHASE NAV ---- */
+  .phase-nav {
+    position: sticky;
+    top: 56px;
+    z-index: 90;
+    background: rgba(248,248,247,0.85);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--neutral-200);
+    padding: 0.6rem 2rem;
+    display: flex;
+    gap: 0.45rem;
+    overflow-x: auto;
+  }
+  .phase-nav button {
+    font-family: var(--font-body);
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.35rem 0.9rem;
+    border-radius: 999px;
+    border: 1.5px solid var(--neutral-200);
+    background: #fff;
+    color: var(--neutral-600);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+  }
+  .phase-nav button:hover {
+    border-color: var(--teal-400);
+    color: var(--teal-700);
+    background: var(--teal-50);
+  }
+  .phase-nav button.active {
+    border-color: var(--teal-500);
+    background: var(--teal-500);
+    color: #fff;
+  }
+
+  /* ---- CONTAINER ---- */
+  .container {
+    max-width: 100%;
+    padding: 2rem 2rem 6rem;
+  }
+
+  /* ---- INTRO CARD ---- */
+  .intro-card {
+    max-width: 900px;
+    margin: 0 auto 2.5rem;
+    padding: 1.5rem 2rem;
+    background: #fff;
+    border-radius: 14px;
+    border: 1px solid var(--neutral-200);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  }
+  .intro-card h2 {
+    font-family: var(--font-serif);
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--neutral-800);
+    margin-bottom: 0.75rem;
+  }
+  .actors-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 0.75rem;
+  }
+  .actor-chip {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.6rem 0.9rem;
+    border-radius: 10px;
+    background: var(--neutral-50);
+    border: 1px solid var(--neutral-100);
+  }
+  .actor-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    flex-shrink: 0;
+    color: #fff;
+    font-weight: 700;
+  }
+  .actor-chip .actor-name {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--neutral-800);
+    line-height: 1.2;
+  }
+  .actor-chip .actor-desc {
+    font-size: 0.72rem;
+    color: var(--neutral-500);
+    line-height: 1.3;
+  }
+
+  /* ---- PHASE SECTION ---- */
+  .phase-section {
+    scroll-margin-top: 130px;
+    margin-bottom: 2.5rem;
+  }
+  .phase-section-header {
+    max-width: 900px;
+    margin: 0 auto 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .phase-num {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 0.95rem;
+    color: #fff;
+    flex-shrink: 0;
+  }
+  .phase-num--0 { background: var(--sky-500); }
+  .phase-num--1 { background: var(--teal-500); }
+  .phase-num--2 { background: var(--coral-500); }
+  .phase-num--3 { background: var(--violet-500); }
+  .phase-num--4 { background: var(--amber-500); }
+  .phase-section-title {
+    font-family: var(--font-serif);
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--neutral-800);
+  }
+
+  /* ---- DIAGRAM WRAPPER ---- */
+  .diagram-wrapper {
+    background: #fff;
+    border-radius: 14px;
+    border: 1px solid var(--neutral-200);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    padding: 2rem 1.5rem;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+  .diagram-wrapper svg {
+    display: block;
+    margin: 0 auto;
+  }
+
+  /* Mermaid overrides */
+  .diagram-wrapper .messageText {
+    font-size: 12px !important;
+    font-family: var(--font-body) !important;
+  }
+  .diagram-wrapper .actor {
+    font-family: var(--font-body) !important;
+    font-weight: 600 !important;
+  }
+  .diagram-wrapper .labelText,
+  .diagram-wrapper .loopText {
+    font-family: var(--font-body) !important;
+    font-weight: 600 !important;
+    font-size: 12px !important;
+  }
+  .diagram-wrapper text.noteText {
+    font-family: var(--font-body) !important;
+    font-size: 11px !important;
+  }
+
+  /* ---- PHASE DIVIDER ---- */
+  .phase-divider {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.75rem 0;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+  .phase-divider svg { color: var(--neutral-300); }
+
+  /* ---- FOOTER ---- */
+  .page-footer {
+    text-align: center;
+    padding: 2rem;
+    color: var(--neutral-400);
+    font-size: 0.72rem;
+    font-weight: 500;
+  }
+
+  /* ---- RESPONSIVE ---- */
+  @media (max-width: 700px) {
+    .page-header { padding: 0.75rem 1rem; }
+    .phase-nav { padding: 0.5rem 1rem; }
+    .container { padding: 1.5rem 0.75rem 4rem; }
+    .intro-card { padding: 1.25rem; }
+    .actors-grid { grid-template-columns: 1fr; }
+    .diagram-wrapper { padding: 1rem 0.5rem; border-radius: 10px; }
+  }
+
+  /* ---- PRINT ---- */
+  @media print {
+    .page-header, .phase-nav { position: static; backdrop-filter: none; }
+    .diagram-wrapper { break-inside: avoid; overflow: visible; }
+  }
+</style>
+</head>
+<body>
+
+<header class="page-header">
+  <h1>HealthCoach CUJ</h1>
+  <span class="badge">Draft v0.1</span>
+  <span class="type-label">UML Sequence Diagram</span>
+</header>
+
+<nav class="phase-nav">
+  <button data-target="section-intro" class="active">Participants</button>
+  <button data-target="section-phase0">Phase 0 -- Intro</button>
+  <button data-target="section-phase1">Phase 1 -- Review</button>
+  <button data-target="section-phase2">Phase 2 -- Prepare</button>
+  <button data-target="section-phase3">Phase 3 -- Summary</button>
+  <button data-target="section-phase4">Phase 4 -- Handoff</button>
+</nav>
+
+<div class="container">
+
+  <!-- Participants -->
+  <section class="phase-section" id="section-intro">
+    <div class="intro-card">
+      <h2>Participants</h2>
+      <div class="actors-grid">
+        <div class="actor-chip">
+          <div class="actor-icon" style="background:var(--teal-600)">P</div>
+          <div>
+            <div class="actor-name">Patient</div>
+            <div class="actor-desc">End user (enrolled out of band)</div>
+          </div>
+        </div>
+        <div class="actor-chip">
+          <div class="actor-icon" style="background:var(--sky-600)">UI</div>
+          <div>
+            <div class="actor-name">HealthCoach UI</div>
+            <div class="actor-desc">Frontend (Vite + vanilla JS)</div>
+          </div>
+        </div>
+        <div class="actor-chip">
+          <div class="actor-icon" style="background:var(--violet-500)">B</div>
+          <div>
+            <div class="actor-name">Chat Bot</div>
+            <div class="actor-desc">Chat interface layer</div>
+          </div>
+        </div>
+        <div class="actor-chip">
+          <div class="actor-icon" style="background:var(--coral-500)">AI</div>
+          <div>
+            <div class="actor-name">LLM (OpenRouter)</div>
+            <div class="actor-desc">AI model backend</div>
+          </div>
+        </div>
+        <div class="actor-chip">
+          <div class="actor-icon" style="background:var(--amber-500)">FS</div>
+          <div>
+            <div class="actor-name">Firestore</div>
+            <div class="actor-desc">Live state persistence</div>
+          </div>
+        </div>
+        <div class="actor-chip">
+          <div class="actor-icon" style="background:var(--neutral-600)">EHR</div>
+          <div>
+            <div class="actor-name">EHR Context</div>
+            <div class="actor-desc">Visit note (loaded at enrollment)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Phase 0 -->
+  <section class="phase-section" id="section-phase0">
+    <div class="phase-section-header">
+      <div class="phase-num phase-num--0">0</div>
+      <div class="phase-section-title">Intro & Orientation</div>
+    </div>
+    <div class="diagram-wrapper"><div id="phase0"></div></div>
+  </section>
+
+  <div class="phase-divider">
+    <svg width="24" height="36" viewBox="0 0 24 36" fill="none"><path d="M12 0v28m0 0l-6-6m6 6l6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </div>
+
+  <!-- Phase 1 -->
+  <section class="phase-section" id="section-phase1">
+    <div class="phase-section-header">
+      <div class="phase-num phase-num--1">1</div>
+      <div class="phase-section-title">Review Last Visit</div>
+    </div>
+    <div class="diagram-wrapper"><div id="phase1"></div></div>
+  </section>
+
+  <div class="phase-divider">
+    <svg width="24" height="36" viewBox="0 0 24 36" fill="none"><path d="M12 0v28m0 0l-6-6m6 6l6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </div>
+
+  <!-- Phase 2 -->
+  <section class="phase-section" id="section-phase2">
+    <div class="phase-section-header">
+      <div class="phase-num phase-num--2">2</div>
+      <div class="phase-section-title">Prepare for Next Visit</div>
+    </div>
+    <div class="diagram-wrapper"><div id="phase2"></div></div>
+  </section>
+
+  <div class="phase-divider">
+    <svg width="24" height="36" viewBox="0 0 24 36" fill="none"><path d="M12 0v28m0 0l-6-6m6 6l6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </div>
+
+  <!-- Phase 3 -->
+  <section class="phase-section" id="section-phase3">
+    <div class="phase-section-header">
+      <div class="phase-num phase-num--3">3</div>
+      <div class="phase-section-title">Summary & Approval</div>
+    </div>
+    <div class="diagram-wrapper"><div id="phase3"></div></div>
+  </section>
+
+  <div class="phase-divider">
+    <svg width="24" height="36" viewBox="0 0 24 36" fill="none"><path d="M12 0v28m0 0l-6-6m6 6l6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </div>
+
+  <!-- Phase 4 -->
+  <section class="phase-section" id="section-phase4">
+    <div class="phase-section-header">
+      <div class="phase-num phase-num--4">4</div>
+      <div class="phase-section-title">Handoff to Evaluation</div>
+    </div>
+    <div class="diagram-wrapper"><div id="phase4"></div></div>
+  </section>
+
+</div>
+
+<footer class="page-footer">
+  HealthCoach CUJ Sequence Diagram -- Draft v0.1 -- Derived from CUJ working sessions (Adam, Sigal, Betsy, Chase, Eric, Ria)
+</footer>
+
+<script src="gate.js"></script>
+</body>
+</html>

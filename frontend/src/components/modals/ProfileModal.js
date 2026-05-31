@@ -3,6 +3,8 @@ import { getProfile, updateProfile } from '../../api/profile.js';
 import { ApiError } from '../../api/client.js';
 import { showToast } from '../Toast.js';
 import { openModal, closeModal } from './modalHelpers.js';
+import { t } from '../../i18n.js';
+import { escapeHtml } from '../../utils/format.js';
 
 const MODAL_ID = 'modal-profile';
 
@@ -12,29 +14,29 @@ export function render() {
     <div class="modal" style="max-width:400px">
       <div class="modal-drag"></div>
       <div class="modal-header">
-        <div class="modal-title">Profile</div>
+        <div class="modal-title">${escapeHtml(t('profile.title'))}</div>
         <button class="modal-close" data-close="${MODAL_ID}" type="button">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
       <div class="profile-section">
-        <div class="profile-section-title">Your details</div>
+        <div class="profile-section-title">${escapeHtml(t('profile.yourDetails'))}</div>
         <div class="profile-grid single">
           <div class="form-group">
-            <label class="form-label" for="profile-name-input">Display name</label>
+            <label class="form-label" for="profile-name-input">${escapeHtml(t('profile.displayName'))}</label>
             <input class="form-input" id="profile-name-input" type="text" autocomplete="name" maxlength="120" />
           </div>
           <div class="form-group">
-            <label class="form-label" for="profile-language-select">Language</label>
+            <label class="form-label" for="profile-language-select">${escapeHtml(t('profile.language'))}</label>
             <select class="form-input" id="profile-language-select">
-              <option value="en">English</option>
-              <option value="es">Español</option>
+              <option value="en">${escapeHtml(t('profile.langEnglish'))}</option>
+              <option value="es">${escapeHtml(t('profile.langSpanish'))}</option>
             </select>
           </div>
         </div>
       </div>
       <div id="profile-error" class="auth-error" style="margin-bottom:12px;display:none"></div>
-      <button type="button" class="btn-primary" id="profile-save-btn">Save</button>
+      <button type="button" class="btn-primary" id="profile-save-btn">${escapeHtml(t('profile.save'))}</button>
     </div>
   </div>`;
 }
@@ -89,6 +91,7 @@ async function save() {
   const langSel = document.getElementById('profile-language-select');
   const name = (nameIn?.value || '').trim();
   const language = langSel?.value === 'es' ? 'es' : 'en';
+  const prevLang = state.profile?.language === 'es' ? 'es' : 'en';
   try {
     const data = await updateProfile({ name, language });
     if (data.user) {
@@ -101,10 +104,15 @@ async function save() {
     } else {
       state.profile = { ...state.profile, name, language };
     }
-    showToast('Profile saved');
+    if (prevLang !== language) {
+      const { reloadApp } = await import('../../main.js');
+      reloadApp();
+      return;
+    }
+    showToast(t('profile.saved'));
     close();
   } catch (e) {
-    const msg = e instanceof ApiError ? e.message : 'Could not save profile. Try again.';
+    const msg = e instanceof ApiError ? e.message : t('profile.saveError');
     setError(msg);
   }
 }

@@ -73,7 +73,7 @@ functions/src/
   routes/
     profile.ts            # GET/PUT /api/profile
     record.ts             # GET/POST/DELETE /api/record
-    chat.ts               # POST /api/chat and /api/summary
+    chat.ts               # POST /api/chat, /api/since-visit-recap, and /api/summary
     sessions.ts           # CRUD /api/sessions
     admin.ts              # POST/PUT /api/admin/prompts
   lib/
@@ -94,6 +94,7 @@ functions/src/
 | POST | `/api/record` | Upload a custom note |
 | DELETE | `/api/record` | Reset to the demo note |
 | POST | `/api/chat` | OpenRouter chat completion |
+| POST | `/api/since-visit-recap` | Since-last-visit interim recap (visit note + timeline JSON) |
 | POST | `/api/summary` | Generate visit summary |
 | GET | `/api/sessions` | List up to 20 recent sessions |
 | POST | `/api/sessions` | Create or update a session |

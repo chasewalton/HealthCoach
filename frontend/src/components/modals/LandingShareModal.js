@@ -2,26 +2,31 @@ import state from '../../state.js';
 import { showToast } from '../Toast.js';
 import { openModal, closeModal, closeModalOnOverlay } from './modalHelpers.js';
 import { downloadAsTxt, downloadAsPdf, downloadAsDocx, getPlainTextPreview } from '../../utils/exportChat.js';
+import { t } from '../../i18n.js';
+import { escapeHtml } from '../../utils/format.js';
 
 const MODAL_ID = 'modal-landing-share';
 
-const FORMATS = [
-  { id: 'pdf',  label: 'PDF',  icon: 'pdf' },
-  { id: 'txt',  label: 'Text', icon: 'txt' },
-  { id: 'docx', label: 'Word', icon: 'docx' },
-];
+const FORMAT_IDS = ['pdf', 'txt', 'docx'];
+const METHOD_IDS = ['email', 'sms'];
+const RECIPIENT_IDS = ['provider', 'caretaker', 'family', 'other'];
 
-const METHODS = [
-  { id: 'email', label: 'Email',        icon: 'email' },
-  { id: 'sms',   label: 'Text Message', icon: 'sms' },
-];
+function formatLabel(id) {
+  if (id === 'pdf') return t('landingShare.fmtPdf');
+  if (id === 'txt') return t('landingShare.fmtText');
+  return t('landingShare.fmtWord');
+}
 
-const RECIPIENTS = [
-  { id: 'provider',  label: 'Provider' },
-  { id: 'caretaker', label: 'Caretaker' },
-  { id: 'family',    label: 'Family' },
-  { id: 'other',     label: 'Other' },
-];
+function methodLabel(id) {
+  return id === 'email' ? t('landingShare.methodEmail') : t('landingShare.methodSms');
+}
+
+function recipientLabel(id) {
+  if (id === 'provider') return t('landingShare.recipProvider');
+  if (id === 'caretaker') return t('landingShare.recipCaretaker');
+  if (id === 'family') return t('landingShare.recipFamily');
+  return t('landingShare.recipOther');
+}
 
 function svgForFormat(type) {
   if (type === 'pdf') return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>';
@@ -44,53 +49,53 @@ export function render() {
     <div class="modal modal--landing-share">
       <div class="modal-drag"></div>
       <div class="modal-header">
-        <div class="modal-title">Share Conversation</div>
+        <div class="modal-title">${escapeHtml(t('landingShare.title'))}</div>
         <button class="modal-close" data-close="${MODAL_ID}">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
 
       <div class="ls-section">
-        <div class="ls-section-label">Format</div>
+        <div class="ls-section-label">${escapeHtml(t('landingShare.format'))}</div>
         <div class="ls-btn-group" id="ls-format-group">
-          ${FORMATS.map(f => `
-            <button type="button" class="ls-toggle-btn${f.id === selectedFormat ? ' active' : ''}" data-format="${f.id}">
-              <span class="ls-toggle-icon">${svgForFormat(f.icon)}</span>
-              ${f.label}
+          ${FORMAT_IDS.map(f => `
+            <button type="button" class="ls-toggle-btn${f === selectedFormat ? ' active' : ''}" data-format="${f}">
+              <span class="ls-toggle-icon">${svgForFormat(f)}</span>
+              ${escapeHtml(formatLabel(f))}
             </button>
           `).join('')}
         </div>
       </div>
 
       <div class="ls-section">
-        <div class="ls-section-label">Send via</div>
+        <div class="ls-section-label">${escapeHtml(t('landingShare.sendVia'))}</div>
         <div class="ls-btn-group" id="ls-method-group">
-          ${METHODS.map(m => `
-            <button type="button" class="ls-toggle-btn${m.id === selectedMethod ? ' active' : ''}" data-method="${m.id}">
-              <span class="ls-toggle-icon">${svgForMethod(m.icon)}</span>
-              ${m.label}
+          ${METHOD_IDS.map(m => `
+            <button type="button" class="ls-toggle-btn${m === selectedMethod ? ' active' : ''}" data-method="${m}">
+              <span class="ls-toggle-icon">${svgForMethod(m)}</span>
+              ${escapeHtml(methodLabel(m))}
             </button>
           `).join('')}
         </div>
       </div>
 
       <div class="ls-section">
-        <div class="ls-section-label">Recipient</div>
+        <div class="ls-section-label">${escapeHtml(t('landingShare.recipient'))}</div>
         <div class="ls-chip-group" id="ls-recipient-group">
-          ${RECIPIENTS.map(r => `
-            <button type="button" class="ls-chip${r.id === selectedRecipient ? ' active' : ''}" data-recipient="${r.id}">${r.label}</button>
+          ${RECIPIENT_IDS.map(r => `
+            <button type="button" class="ls-chip${r === selectedRecipient ? ' active' : ''}" data-recipient="${r}">${escapeHtml(recipientLabel(r))}</button>
           `).join('')}
         </div>
       </div>
 
       <div class="ls-section">
-        <div class="ls-section-label" id="ls-contact-label">Email address</div>
-        <input type="text" class="ls-contact-input" id="ls-contact-input" placeholder="recipient@email.com" autocomplete="off" />
+        <div class="ls-section-label" id="ls-contact-label">${escapeHtml(t('landingShare.email'))}</div>
+        <input type="text" class="ls-contact-input" id="ls-contact-input" placeholder="${escapeHtml(t('landingShare.phEmail'))}" autocomplete="off" />
       </div>
 
       <button type="button" class="ls-submit-btn" id="ls-submit-btn">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-        Share
+        ${escapeHtml(t('landingShare.share'))}
       </button>
     </div>
   </div>`;
@@ -113,32 +118,31 @@ function syncUI() {
   const label = document.getElementById('ls-contact-label');
   const input = document.getElementById('ls-contact-input');
   if (selectedMethod === 'email') {
-    label.textContent = 'Email address';
-    input.placeholder = 'recipient@email.com';
+    label.textContent = t('landingShare.email');
+    input.placeholder = t('landingShare.phEmail');
     input.type = 'email';
   } else {
-    label.textContent = 'Phone number';
-    input.placeholder = '+1 (555) 000-0000';
+    label.textContent = t('landingShare.phone');
+    input.placeholder = t('landingShare.phPhone');
     input.type = 'tel';
   }
 }
 
 function getRecipientLabel() {
-  const r = RECIPIENTS.find(x => x.id === selectedRecipient);
-  return r ? r.label : '';
+  return recipientLabel(selectedRecipient);
 }
 
 async function handleSubmit() {
   const contact = document.getElementById('ls-contact-input').value.trim();
   if (!contact) {
-    showToast(selectedMethod === 'email' ? 'Please enter an email address.' : 'Please enter a phone number.');
+    showToast(selectedMethod === 'email' ? t('landingShare.toastEmail') : t('landingShare.toastPhone'));
     document.getElementById('ls-contact-input').focus();
     return;
   }
 
   const messages = state.landingMessages;
   if (!messages.length) {
-    showToast('No conversation to share yet.');
+    showToast(t('landingShare.toastNone'));
     return;
   }
 
@@ -153,21 +157,21 @@ async function handleSubmit() {
   }
 
   const preview = getPlainTextPreview(messages);
-  const subject = encodeURIComponent('HealthCoach Conversation');
+  const subject = encodeURIComponent(t('landingShare.emailSubject'));
 
   if (selectedMethod === 'email') {
     const body = encodeURIComponent(
-      `Hi,\n\nPlease find the attached HealthCoach conversation (${selectedFormat.toUpperCase()} file downloaded separately).\n\n---\n${preview.slice(0, 1500)}`
+      t('landingShare.emailBodyIntro', { format: selectedFormat.toUpperCase() }) + preview.slice(0, 1500)
     );
     window.open(`mailto:${encodeURIComponent(contact)}?subject=${subject}&body=${body}`, '_self');
   } else {
     const smsBody = encodeURIComponent(
-      `HealthCoach Conversation Summary:\n\n${preview.slice(0, 600)}`
+      t('landingShare.smsBodyIntro') + preview.slice(0, 600)
     );
     window.open(`sms:${encodeURIComponent(contact)}?body=${smsBody}`, '_self');
   }
 
-  showToast('File downloaded — opening your app to share.');
+  showToast(t('landingShare.toastDownloaded'));
   closeModal(MODAL_ID);
 }
 

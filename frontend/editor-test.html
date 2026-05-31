@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HealthCoach - Pre-Note Editor Test Harness</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=Lora:ital,wght@0,500;0,600;1,500&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="stylesheet" href="/src/styles/reset.css" />
+  <link rel="stylesheet" href="/src/styles/tokens.css" />
+  <link rel="stylesheet" href="/src/styles/landing.css" />
+  <style>
+    html, body {
+      background: var(--color-bg);
+      color: var(--color-text);
+      font-family: var(--font-body);
+      margin: 0;
+      min-height: 100%;
+    }
+    .editor-test-shell {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 32px 24px 80px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+    .editor-test-header {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .editor-test-title {
+      font-family: var(--font-serif);
+      font-size: calc(24px * var(--type-scale));
+      font-weight: 600;
+      color: var(--neutral-900);
+      margin: 0;
+    }
+    .editor-test-subtitle {
+      font-size: calc(14px * var(--type-scale));
+      color: var(--neutral-600);
+      margin: 0;
+    }
+    .editor-test-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      padding: 12px 14px;
+      border: 1px solid var(--neutral-200);
+      border-radius: var(--radius-md);
+      background: var(--color-surface);
+    }
+    .editor-test-toolbar label {
+      font-size: calc(13px * var(--type-scale));
+      color: var(--neutral-700);
+      font-weight: 600;
+    }
+    .editor-test-toolbar select,
+    .editor-test-toolbar button {
+      font-family: inherit;
+      font-size: calc(13px * var(--type-scale));
+      padding: 6px 12px;
+      min-height: 32px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--neutral-300);
+      background: #fff;
+      color: var(--neutral-800);
+      cursor: pointer;
+    }
+    .editor-test-toolbar button:hover {
+      background: var(--neutral-100);
+      border-color: var(--neutral-400);
+    }
+    .editor-test-stage {
+      position: relative;
+      border: 1px dashed var(--neutral-300);
+      border-radius: var(--radius-md);
+      background: var(--color-surface);
+      padding: 16px 16px 22px;
+    }
+    .editor-test-stage::before {
+      content: 'Stage (mirrors .landing-chat container)';
+      position: absolute;
+      top: -10px;
+      left: 16px;
+      background: var(--color-bg);
+      padding: 0 6px;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--neutral-500);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .editor-test-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    @media (max-width: 920px) {
+      .editor-test-grid { grid-template-columns: 1fr; }
+    }
+    .editor-test-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      border: 1px solid var(--neutral-200);
+      border-radius: var(--radius-md);
+      background: var(--color-surface);
+      padding: 12px 14px 14px;
+    }
+    .editor-test-panel-title {
+      font-size: calc(12px * var(--type-scale));
+      font-weight: 700;
+      color: var(--neutral-600);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .editor-test-panel pre {
+      margin: 0;
+      max-height: 260px;
+      overflow: auto;
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      background: var(--neutral-100);
+      border: 1px solid var(--neutral-200);
+      font-family: 'SFMono-Regular', 'Menlo', 'Consolas', monospace;
+      font-size: 12px;
+      line-height: 1.5;
+      color: var(--neutral-800);
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .editor-test-status {
+      font-size: calc(13px * var(--type-scale));
+      color: var(--neutral-700);
+      background: var(--color-surface);
+      border: 1px solid var(--neutral-200);
+      border-radius: var(--radius-md);
+      padding: 10px 14px;
+    }
+    .editor-test-status strong {
+      color: var(--neutral-900);
+    }
+    .editor-test-legend {
+      display: inline-flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      font-size: calc(12px * var(--type-scale));
+      color: var(--neutral-600);
+    }
+    .editor-test-legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .editor-test-legend .swatch {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border-radius: 3px;
+    }
+    .editor-test-legend .swatch.ins {
+      background: rgba(16, 185, 129, 0.14);
+      border: 1px solid #10b981;
+    }
+    .editor-test-legend .swatch.del {
+      background: rgba(239, 68, 68, 0.12);
+      border: 1px solid #ef4444;
+    }
+  </style>
+</head>
+<body>
+  <div class="editor-test-shell">
+    <header class="editor-test-header">
+      <h1 class="editor-test-title">Pre-Note Editor Test Harness</h1>
+      <p class="editor-test-subtitle">
+        Standalone view of the same redline editor that lives in the landing chat. No login, no
+        conversation flow - just the summary card so you can iterate quickly.
+      </p>
+      <div class="editor-test-legend" aria-hidden="true">
+        <span><i class="swatch ins"></i> Insertion (typed)</span>
+        <span><i class="swatch del"></i> Deletion (Backspace / Delete)</span>
+      </div>
+    </header>
+
+    <div class="editor-test-toolbar" role="group" aria-label="Test harness controls">
+      <label for="editor-test-sample">Sample draft:</label>
+      <select id="editor-test-sample"></select>
+      <button type="button" id="editor-test-reset">Reset draft</button>
+      <button type="button" id="editor-test-toggle-en-es">Toggle EN / ES</button>
+      <span id="editor-test-lang-indicator" style="margin-left: auto; color: var(--neutral-500); font-size: 12px;"></span>
+    </div>
+
+    <div class="editor-test-stage" id="editor-test-stage">
+      <div class="landing-chat" id="editor-test-chat-container" style="position: relative; flex: initial; min-height: 0; border-top: none; background: transparent;">
+        <div class="landing-chat-input-area" id="editor-test-input-area" style="background: transparent; border-top: none; box-shadow: none; padding-top: 0;">
+          <div class="landing-chat-input-row" style="opacity: 0.35; pointer-events: none;">
+            <div class="landing-chat-input-wrap">
+              <textarea class="landing-chat-textarea" rows="1" placeholder="(real chat composer placeholder)" disabled></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="editor-test-status" id="editor-test-status">
+      <strong>Approve button label:</strong>
+      <span id="editor-test-btn-label">-</span>
+      &nbsp;|&nbsp;
+      <strong>Tracked edits present:</strong>
+      <span id="editor-test-has-edits">-</span>
+    </div>
+
+    <div class="editor-test-grid">
+      <section class="editor-test-panel" aria-labelledby="editor-test-final-title">
+        <div class="editor-test-panel-title" id="editor-test-final-title">Flattened plain text (Accept all)</div>
+        <pre id="editor-test-final-output"></pre>
+      </section>
+      <section class="editor-test-panel" aria-labelledby="editor-test-html-title">
+        <div class="editor-test-panel-title" id="editor-test-html-title">Editor inner HTML</div>
+        <pre id="editor-test-html-output"></pre>
+      </section>
+    </div>
+  </div>
+
+  <script type="module" src="/src/dev/editorTest.js"></script>
+</body>
+</html>

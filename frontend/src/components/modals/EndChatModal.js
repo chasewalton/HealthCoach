@@ -1,7 +1,8 @@
 import state from '../../state.js';
 import { generateSummary } from '../../api/chat.js';
-import { showToast } from '../Toast.js';
 import { openModal, closeModal, closeModalOnOverlay } from './modalHelpers.js';
+import { t } from '../../i18n.js';
+import { escapeHtml, stripInstructionMarker } from '../../utils/format.js';
 
 const MODAL_ID = 'modal-end-chat';
 
@@ -19,31 +20,31 @@ export function render() {
     <div class="modal modal--end-chat">
       <div class="modal-drag"></div>
       <div class="modal-header">
-        <div class="modal-title">End Conversation</div>
+        <div class="modal-title">${escapeHtml(t('endChat.title'))}</div>
         <button class="modal-close" data-close="${MODAL_ID}">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
 
       <div class="ec-section">
-        <div class="ec-section-label">Conversation Summary</div>
+        <div class="ec-section-label">${escapeHtml(t('endChat.summary'))}</div>
         <div id="ec-summary-status" class="ec-summary-status"></div>
-        <textarea class="ec-summary-textarea" id="ec-summary-textarea" placeholder="Your conversation summary will appear here..." rows="6"></textarea>
+        <textarea class="ec-summary-textarea" id="ec-summary-textarea" placeholder="${escapeHtml(t('endChat.placeholder'))}" rows="6"></textarea>
         <button type="button" class="ec-regenerate-btn" id="ec-regenerate-btn">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-          Regenerate
+          ${escapeHtml(t('endChat.regenerate'))}
         </button>
       </div>
 
       <div class="ec-actions">
         <button type="button" class="ec-share-btn" id="ec-share-btn">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-          Share
+          ${escapeHtml(t('endChat.share'))}
         </button>
-        <button type="button" class="ec-cancel-btn" id="ec-cancel-btn">Continue chatting</button>
+        <button type="button" class="ec-cancel-btn" id="ec-cancel-btn">${escapeHtml(t('endChat.continueChat'))}</button>
         <button type="button" class="ec-confirm-btn" id="ec-confirm-btn">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-          End Conversation
+          ${escapeHtml(t('endChat.end'))}
         </button>
       </div>
     </div>
@@ -59,23 +60,26 @@ async function loadSummary() {
   textarea.value = '';
   textarea.disabled = true;
   regenBtn.disabled = true;
-  status.textContent = 'Generating summary...';
+  status.textContent = t('endChat.generating');
   status.className = 'ec-summary-status ec-summary-status--loading';
 
-  const history = state.landingMessages.map(m => ({ role: m.role, content: m.content }));
+  const history = state.landingMessages.map((m) => ({
+    role: m.role,
+    content: stripInstructionMarker(m.content),
+  }));
 
   try {
     const data = await generateSummary(history, 'dashboard');
     if (!data.summary) {
-      status.textContent = 'Could not generate summary. You can write your own below.';
+      status.textContent = t('endChat.errorGenerate');
       status.className = 'ec-summary-status ec-summary-status--error';
     } else {
       textarea.value = data.summary;
-      status.textContent = 'You can edit this summary before sharing or ending.';
+      status.textContent = t('endChat.editHint');
       status.className = 'ec-summary-status';
     }
   } catch (_) {
-    status.textContent = 'Unable to reach the server. You can write your own summary below.';
+    status.textContent = t('endChat.errorServer');
     status.className = 'ec-summary-status ec-summary-status--error';
   } finally {
     textarea.disabled = false;

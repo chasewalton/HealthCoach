@@ -8,6 +8,13 @@ import './styles/modals.css';
 import './styles/home-landing.css';
 import './styles/utilities.css';
 
+import { registerTranslations, syncDocumentLang, t } from './i18n.js';
+import en from './translations/en.js';
+import es from './translations/es.js';
+
+registerTranslations('en', en);
+registerTranslations('es', es);
+
 import state from './state.js';
 import { auth } from './firebase.js';
 import { showScreen } from './router.js';
@@ -23,24 +30,46 @@ import * as ChatScreen from './components/screens/ChatScreen.js';
 import * as HomeLandingScreen from './components/screens/HomeLandingScreen.js';
 
 import * as SummaryModal from './components/modals/SummaryModal.js';
+import * as SummaryDocModal from './components/modals/SummaryDocModal.js';
 import * as NoteModal from './components/modals/NoteModal.js';
 import * as ShareModal from './components/modals/ShareModal.js';
 import * as AdminModal from './components/modals/AdminModal.js';
 import * as ProfileModal from './components/modals/ProfileModal.js';
 import * as VersionChangelogModal from './components/modals/VersionChangelogModal.js';
-import * as LandingShareModal from './components/modals/LandingShareModal.js';
+import * as StudyFeedbackModal from './components/modals/StudyFeedbackModal.js';
 import * as EndChatModal from './components/modals/EndChatModal.js';
-
 import * as NotePrompt from './components/chat/NotePrompt.js';
-import * as HistoryDrawer from './components/HistoryDrawer.js';
 import * as Toast from './components/Toast.js';
 import * as VersionBadge from './components/VersionBadge.js';
 import { disposeLandingAmbient3d } from './three/landingAmbient.js';
 
-const API_DOWN_HINT =
-  'Cannot reach the backend. Check BACKEND_URL in frontend/.env.local and make sure the Firebase Hosting site is available.';
+function apiDownHint() {
+  return t('main.apiDown');
+}
 
 let activeAuthTransition = 0;
+
+/** Full DOM re-init after language change from Profile (keeps router state). */
+export function reloadApp() {
+  const activeId = document.querySelector('.screen.active')?.id || '';
+  const name = activeId.replace(/^screen-/, '') || 'landing';
+  LandingScreen.teardownLandingHooks();
+  renderApp();
+  initComponents();
+  wireCallbacks();
+  syncDocumentLang();
+  if (typeof document !== 'undefined') {
+    document.title = t('app.title');
+  }
+  showScreen(name);
+  if (name === 'landing') {
+    LandingScreen.renderJourneyStepper();
+    LandingScreen.renderLandingChatMessages();
+    LandingScreen.updatePersonalization();
+    LandingScreen.updateNoteCard();
+  }
+  HomeLandingScreen.refresh();
+}
 
 function renderApp() {
   const app = document.getElementById('app');
@@ -50,14 +79,14 @@ function renderApp() {
     ChatScreen.render(),
     HomeLandingScreen.render(),
     SummaryModal.render(),
+    SummaryDocModal.render(),
     NoteModal.render(),
     ShareModal.render(),
     AdminModal.render(),
     ProfileModal.render(),
     VersionChangelogModal.render(),
-    LandingShareModal.render(),
+    StudyFeedbackModal.render(),
     EndChatModal.render(),
-    HistoryDrawer.render(),
     Toast.render(),
     VersionBadge.render(),
   ].join('');
@@ -69,13 +98,13 @@ function initComponents() {
   ChatScreen.init();
   HomeLandingScreen.init();
   SummaryModal.init();
+  SummaryDocModal.init();
   NoteModal.init();
-  HistoryDrawer.init();
   ShareModal.init();
   AdminModal.init();
   ProfileModal.init();
   VersionChangelogModal.init();
-  LandingShareModal.init();
+  StudyFeedbackModal.init();
   EndChatModal.init();
   VersionBadge.init();
 }
@@ -117,14 +146,30 @@ function wireCallbacks() {
     onOpenProfile: () => ProfileModal.open(),
     onOpenAdminLogin: () => AdminModal.openLogin(),
     onSignOut: signOut,
-    onLoadSession: loadSessionById,
     onOpenHomeLanding: () => {
       state.homeLandingReturnScreen = 'landing';
       HomeLandingScreen.refresh();
       showScreen('home');
     },
-    onOpenLandingShare: () => LandingShareModal.open(),
-    onEndChat: () => EndChatModal.open(),
+    onOpenStudyModal: () => StudyFeedbackModal.open(),
+    onOpenEndConversation: () => EndChatModal.open(),
+    onOpenSummaryDoc: (summaryText) => SummaryDocModal.open(summaryText),
+  });
+
+  StudyFeedbackModal.setCallbacks({
+    onClose: () => LandingScreen.handleStudyFeedbackClosed(),
+  });
+
+  EndChatModal.setCallbacks({
+    onConfirmEnd: () => {},
+    onOpenShare: async () => {
+      const LandingShareModal = await import('./components/modals/LandingShareModal.js');
+      if (!document.getElementById('modal-landing-share')) {
+        document.getElementById('app')?.insertAdjacentHTML('beforeend', LandingShareModal.render());
+        LandingShareModal.init();
+      }
+      LandingShareModal.open();
+    },
   });
 
   ChatScreen.setCallbacks({
@@ -138,11 +183,6 @@ function wireCallbacks() {
   NoteModal.setCallbacks({
     onNoteUpdated: () => LandingScreen.updateNoteCard(),
     onProceedFromNote: () => ChatScreen.proceedFromNotePrompt(),
-  });
-
-  EndChatModal.setCallbacks({
-    onConfirmEnd: () => LandingScreen.startNewConversation(),
-    onOpenShare: () => LandingShareModal.open(),
   });
 
   ShareModal.setCallbacks({
@@ -161,15 +201,6 @@ function wireCallbacks() {
     },
   });
 
-  HistoryDrawer.setCallbacks({
-    onLoadSession: loadSessionById,
-    onSessionDeleted: async (deletedId) => {
-      if (deletedId === state.landingSessionId) {
-        LandingScreen.resetLandingChat();
-      }
-      await LandingScreen.renderRecentList();
-    },
-  });
 }
 
 async function enterApp(firebaseUser) {
@@ -179,15 +210,14 @@ async function enterApp(firebaseUser) {
   LandingScreen.updatePersonalization();
   LandingScreen.updateNoteCard();
   LandingScreen.initLandingChat();
-  await LandingScreen.renderRecentList();
 }
 
 async function signOut() {
-  if (!window.confirm('Sign out?')) return;
+  if (!window.confirm(t('main.signOutConfirm'))) return;
   try {
     await logout();
   } catch (err) {
-    Toast.showToast(err?.message || 'Could not sign out. Please try again.');
+    Toast.showToast(err?.message || t('main.signOutError'));
   }
 }
 
@@ -203,8 +233,32 @@ function resetAuthenticatedState() {
   state.landingMessages = [];
   state.landingSessionId = null;
   state.landingIsTyping = false;
+  state.landingAwaitingReviewTopics = false;
+  state.landingReviewPriorityPhase = null;
+  state.landingPriorityTopics = [];
+  state.landingAwaitingSinceVisitChecklist = false;
+  state.landingAwaitingConcernsChecklist = false;
+  state.landingAwaitingVisitGoalsChecklist = false;
+  state.landingSinceVisitFollowUp = null;
+  state.landingSinceVisitDetails = {};
+  state.landingSinceVisitNarrative = '';
+  state.landingGoingWellReply = '';
+  state.landingConcernsDetails = {};
+  state.landingVisitGoalsDetails = {};
+  state.landingVisitGoalsNote = '';
+  state.landingAwaitingProviderQuestionContinue = false;
+  state.landingAwaitingHandoffSummaryReview = false;
+  state.landingAwaitingHandoffShareChoice = false;
   state.landingConversationStarted = false;
-  state.landingPrepareNextAction = 'prepare';
+  state.journeyPhase = 0;
+  state.onboardingStep = null;
+  state.reviewWrapStep = null;
+  state.pendingPhaseTarget = null;
+  state.landingStudyFeedbackReason = null;
+  state.landingFeedbackSummaryMarkdown = null;
+  state.landingAwaitingPostWalkthroughFeedback = false;
+  state.landingAwaitingWalkthroughContinue = false;
+  state.landingEndConversationCtaVisible = false;
   disposeLandingAmbient3d();
 }
 
@@ -227,10 +281,11 @@ async function fetchProfile(firebaseUser) {
   try {
     const data = await getProfile(firebaseUser);
     mergeUserAndProfile(data);
+    syncDocumentLang();
   } catch (err) {
     if (err instanceof ApiError && (err.status === 404 || err.status === 502)) {
-      console.warn('HealthCoach:', API_DOWN_HINT);
-      Toast.showToast(API_DOWN_HINT);
+      console.warn('HealthCoach:', apiDownHint());
+      Toast.showToast(apiDownHint());
     }
   }
 }
@@ -245,11 +300,9 @@ async function fetchPatientRecord(firebaseUser) {
 
 async function goBack() {
   showScreen('landing');
-  await LandingScreen.renderRecentList();
 }
 
 async function loadSessionById(id) {
-  HistoryDrawer.close();
   let s = state.sessions.find(x => x.id === id);
   if (!s) {
     try {
@@ -261,9 +314,6 @@ async function loadSessionById(id) {
     state.sessions = [s, ...state.sessions];
   }
   if (s.mode === 'dashboard') {
-    state.currentSessionId = null;
-    LandingScreen.loadDashboardSession(s);
-    showScreen('landing');
     return;
   }
   state.landingSessionId = null;
@@ -294,9 +344,13 @@ async function handleAuthStateChange(user) {
 }
 
 (async function initApp() {
+  if (typeof document !== 'undefined') {
+    document.title = t('app.title');
+  }
   renderApp();
   initComponents();
   wireCallbacks();
+  syncDocumentLang();
 
   checkSession(async (user) => {
     await handleAuthStateChange(user);

@@ -5,10 +5,17 @@ import { isEmergency } from '../../utils/emergency.js';
 import { formatMessage, escapeHtml } from '../../utils/format.js';
 import { scrollBottom, autoResize, getUserInitials } from '../../utils/dom.js';
 import { showToast } from '../Toast.js';
+import { t, dateLocale } from '../../i18n.js';
 
-const SOAP_SECTIONS = ['What Brought You In', 'What Was Found', 'What It Means', 'Your Plan'];
-const PREP_SECTIONS = ['What Matters', '6-Month Health', 'Getting It Right', 'Wrap-Up'];
-const COMBINED_SECTIONS = ['Your Last Visit', 'What Matters Most', 'What\'s Changed', 'Wrap-Up'];
+function soapSectionLabels() {
+  return [0, 1, 2, 3].map(i => t(`chat.section.soap.${i}`));
+}
+function prepSectionLabels() {
+  return [0, 1, 2, 3].map(i => t(`chat.section.prep.${i}`));
+}
+function combinedSectionLabels() {
+  return [0, 1, 2, 3].map(i => t(`chat.section.combined.${i}`));
+}
 
 let onGoBack = null;
 let onOpenSummary = null;
@@ -28,21 +35,24 @@ export function render() {
   return `
   <div id="screen-chat" class="screen">
     <div class="chat-header">
-      <button class="chat-back-btn" id="chat-back-btn">
+      <button class="chat-back-btn" id="chat-back-btn" aria-label="${escapeHtml(t('chat.backAria'))}">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
       </button>
       <div class="chat-header-info">
-        <div class="chat-mode-label" id="chat-mode-label">Review Mode</div>
-        <div class="chat-title" id="chat-title">Last Visit Review</div>
+        <div class="chat-mode-label" id="chat-mode-label">${escapeHtml(t('chat.mode.review'))}</div>
+        <div class="chat-title" id="chat-title">${escapeHtml(t('chat.title.review'))}</div>
       </div>
       <div class="chat-header-actions">
-        <button class="icon-btn" id="chat-share-btn" title="Share or delete">
+        <button class="icon-btn" id="chat-reverse-btn" title="${escapeHtml(t('chat.reverseTurn'))}" aria-label="${escapeHtml(t('chat.reverseTurn'))}" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+        </button>
+        <button class="icon-btn" id="chat-share-btn" title="${escapeHtml(t('chat.shareDelete'))}">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
         </button>
-        <button class="icon-btn" id="chat-new-btn" title="New chat">
+        <button class="icon-btn" id="chat-new-btn" title="${escapeHtml(t('chat.newChat'))}">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         </button>
-        <button type="button" class="icon-btn" id="chat-signout-btn" title="Sign out">
+        <button type="button" class="icon-btn" id="chat-signout-btn" title="${escapeHtml(t('chat.signOut'))}">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
         </button>
       </div>
@@ -58,9 +68,9 @@ export function render() {
 
     <div class="chat-input-area">
       <div class="chat-input-wrap">
-        <textarea class="chat-textarea" id="chat-input" placeholder="Type your message..." rows="1"></textarea>
+        <textarea class="chat-textarea" id="chat-input" placeholder="${escapeHtml(t('chat.placeholder'))}" rows="1"></textarea>
         <div class="chat-actions">
-          <button class="chat-action-btn" id="voice-btn" title="Voice input">
+          <button class="chat-action-btn" id="voice-btn" title="${escapeHtml(t('chat.voiceInput'))}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
           </button>
           <button class="send-btn" id="send-btn" disabled>
@@ -71,7 +81,7 @@ export function render() {
       <div class="summarize-bar" id="summarize-bar" style="display:none">
         <button class="summarize-btn" id="summarize-btn">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-          Finish &amp; Create Summary
+          ${escapeHtml(t('chat.finishSummary'))}
         </button>
       </div>
     </div>
@@ -83,6 +93,7 @@ export function init() {
     await saveCurrentSession();
     if (onGoBack) onGoBack();
   });
+  document.getElementById('chat-reverse-btn').addEventListener('click', reverseLastAssistantTurn);
   document.getElementById('chat-share-btn').addEventListener('click', () => {
     if (onOpenShareModal) onOpenShareModal();
   });
@@ -94,7 +105,7 @@ export function init() {
     if (onSignOut) onSignOut();
   });
   document.getElementById('voice-btn').addEventListener('click', () => {
-    showToast('Voice input coming soon');
+    showToast(t('chat.voiceSoon'));
   });
   document.getElementById('send-btn').addEventListener('click', sendMessage);
   document.getElementById('chat-input').addEventListener('keydown', handleInputKey);
@@ -121,34 +132,33 @@ export function startChat(mode) {
   const summarizeBar = document.getElementById('summarize-bar');
 
   if (mode === 'review') {
-    modeLabel.textContent = 'Visit Review';
+    modeLabel.textContent = t('chat.mode.visitReview');
     modeLabel.className = 'chat-mode-label review';
-    titleEl.textContent = 'Your Last Visit';
-    renderSectionPills(SOAP_SECTIONS, 0);
+    titleEl.textContent = t('chat.title.yourLastVisit');
+    renderSectionPills(soapSectionLabels(), 0);
     pillBar.style.display = 'flex';
     summarizeBar.style.display = 'flex';
   } else if (mode === 'combined') {
-    modeLabel.textContent = 'Visit Review + Prep';
+    modeLabel.textContent = t('chat.mode.visitReviewPrep');
     modeLabel.className = 'chat-mode-label prepare';
-    titleEl.textContent = 'Review & Prepare';
-    renderSectionPills(COMBINED_SECTIONS, 0);
+    titleEl.textContent = t('chat.title.reviewPrepare');
+    renderSectionPills(combinedSectionLabels(), 0);
     pillBar.style.display = 'flex';
     summarizeBar.style.display = 'flex';
   } else {
-    modeLabel.textContent = 'Visit Prep';
+    modeLabel.textContent = t('chat.mode.visitPrep');
     modeLabel.className = 'chat-mode-label prepare';
-    titleEl.textContent = 'Prepare for Your Next Visit';
-    renderSectionPills(PREP_SECTIONS, 0);
+    titleEl.textContent = t('chat.title.prepareNext');
+    renderSectionPills(prepSectionLabels(), 0);
     pillBar.style.display = 'flex';
     summarizeBar.style.display = 'flex';
   }
 
   document.getElementById('chat-body').innerHTML = '';
   setProgress(0);
+  updateReverseButton();
   document.getElementById('screen-chat').classList.toggle('mode-prepare', mode === 'prepare' || mode === 'combined');
 }
-
-const PRIVACY_NOTE = 'This conversation is private and not shared with your doctor unless you choose to share it. I\'m not a doctor, so always check with your care team about medical decisions.';
 
 export function showInitialPrompt() {
   const mode = state.chatMode;
@@ -168,18 +178,18 @@ export function proceedFromNotePrompt() {
 function sendOpeningMessage() {
   state.chatPath = 'guided';
   const firstName = state.profile.name ? state.profile.name.split(' ')[0] : '';
-  const nameGreet = firstName ? `Hi ${firstName}!` : 'Hi there!';
+  const nameGreet = firstName ? t('chat.greetNamed', { first: firstName }) : t('chat.greetGeneric');
 
   let opening;
   if (state.chatMode === 'review') {
-    opening = `${nameGreet} I have your visit note loaded and I'm ready whenever you are.\n\nBefore I dive in -- is there anything specific from that visit you've been wondering about, or would you like me to walk through the whole thing together?`;
+    opening = t('chat.opening.review', { nameGreet });
   } else if (state.chatMode === 'combined') {
-    opening = `${nameGreet} I have your visit note loaded. We can go over what happened at your last visit and then help you get ready for the next one.\n\nWhat would be most helpful to start with -- is there something from your last visit that's been on your mind, or would you rather jump straight into preparing for what's ahead?`;
+    opening = t('chat.opening.combined', { nameGreet });
   } else {
-    opening = `${nameGreet} I'm here to help you feel prepared and confident for your next appointment.\n\nWhat's the main thing on your mind about this upcoming visit?`;
+    opening = t('chat.opening.prepare', { nameGreet });
   }
 
-  addAssistantMessage(`${opening}\n\n${PRIVACY_NOTE}`);
+  addAssistantMessage(`${opening}\n\n${t('chat.privacyNote')}`);
   setProgress(5);
 }
 
@@ -189,7 +199,7 @@ function renderSectionPills(sections, activeIdx) {
     let cls = 'section-pill';
     if (i < activeIdx) cls += ' done';
     if (i === activeIdx) cls += ' active';
-    return `<div class="${cls}">${s}</div>`;
+    return `<div class="${cls}">${escapeHtml(s)}</div>`;
   }).join('');
 }
 
@@ -197,7 +207,15 @@ function setProgress(pct) {
   document.getElementById('progress-fill').style.width = pct + '%';
 }
 
-export function addAssistantMessage(text, chips) {
+export function addAssistantMessage(text, chips, opts = {}) {
+  const skipAutoFocus = Boolean(opts.skipAutoFocus);
+  appendAssistantMessage(text, chips, { skipAutoFocus });
+  state.messages.push({ role: 'assistant', content: text, chips });
+  updateReverseButton();
+}
+
+function appendAssistantMessage(text, chips, opts = {}) {
+  const skipAutoFocus = Boolean(opts.skipAutoFocus);
   const body = document.getElementById('chat-body');
   const msgId = 'msg-' + Date.now();
   const row = document.createElement('div');
@@ -212,7 +230,7 @@ export function addAssistantMessage(text, chips) {
     const chipRow = document.createElement('div');
     chipRow.className = 'choice-chips';
     chipRow.innerHTML = chips.map((c, i) =>
-      `<button class="chip" data-chip="${c.replace(/"/g, '&quot;')}" style="animation-delay:${i * 0.08}s">${c}</button>`
+      `<button class="chip" data-chip="${c.replace(/"/g, '&quot;')}" style="animation-delay:${i * 0.08}s">${escapeHtml(c)}</button>`
     ).join('');
     chipRow.querySelectorAll('.chip').forEach(chip => {
       chip.addEventListener('click', () => selectChip(chip.dataset.chip, chipRow));
@@ -220,11 +238,23 @@ export function addAssistantMessage(text, chips) {
     body.appendChild(chipRow);
   }
 
-  state.messages.push({ role: 'assistant', content: text, chips });
   scrollBottom();
+
+  if (!skipAutoFocus && (!chips || !chips.length)) {
+    requestAnimationFrame(() => {
+      const inp = document.getElementById('chat-input');
+      if (inp) inp.focus();
+    });
+  }
 }
 
 export function addUserMessage(text) {
+  appendUserMessage(text);
+  state.messages.push({ role: 'user', content: text });
+  updateReverseButton();
+}
+
+function appendUserMessage(text) {
   const body = document.getElementById('chat-body');
   const row = document.createElement('div');
   row.className = 'msg-row user';
@@ -233,7 +263,6 @@ export function addUserMessage(text) {
     <div class="msg-avatar">${getUserInitials()}</div>
   `;
   body.appendChild(row);
-  state.messages.push({ role: 'user', content: text });
   scrollBottom();
 }
 
@@ -283,24 +312,82 @@ function handleInputKey(e) {
   }
 }
 
+function getLastReversibleAssistantIndex() {
+  if (state.isTyping) return -1;
+  const lastAssistantIdx = state.messages.map(m => m.role).lastIndexOf('assistant');
+  if (lastAssistantIdx <= 0) return -1;
+  const previousAssistantIdx = state.messages
+    .slice(0, lastAssistantIdx)
+    .map(m => m.role)
+    .lastIndexOf('assistant');
+  return previousAssistantIdx >= 0 ? lastAssistantIdx : -1;
+}
+
+function updateReverseButton() {
+  const btn = document.getElementById('chat-reverse-btn');
+  if (!btn) return;
+  btn.disabled = getLastReversibleAssistantIndex() === -1;
+}
+
+function renderMessagesFromState() {
+  const body = document.getElementById('chat-body');
+  if (!body) return;
+  body.innerHTML = '';
+  const lastIdx = state.messages.length - 1;
+  state.messages.forEach((m, idx) => {
+    if (m.role === 'assistant') {
+      appendAssistantMessage(m.content, idx === lastIdx ? m.chips : undefined, { skipAutoFocus: true });
+    } else {
+      appendUserMessage(m.content);
+    }
+  });
+  updateReverseButton();
+  requestAnimationFrame(() => {
+    document.getElementById('chat-input')?.focus();
+  });
+}
+
+async function reverseLastAssistantTurn() {
+  const lastAssistantIdx = getLastReversibleAssistantIndex();
+  if (lastAssistantIdx === -1) return;
+
+  const previousAssistantIdx = state.messages
+    .slice(0, lastAssistantIdx)
+    .map(m => m.role)
+    .lastIndexOf('assistant');
+  state.messages = state.messages.slice(0, previousAssistantIdx + 1);
+  state.lastSummary = null;
+  renderMessagesFromState();
+  updateProgressHeuristic();
+
+  if (state.currentSessionId) {
+    await saveCurrentSession();
+  }
+}
+
+function wantsSummaryShortcut(text) {
+  const s = text.trim();
+  return (
+    /^(create|generate|make|give me).*summary/i.test(s) ||
+    /^(crear|generar|hazme|dame|hacer|obtener).*resumen/i.test(s)
+  );
+}
+
 async function processUserInput(text) {
   if (isEmergency(text, state.chatMode)) {
-    addAssistantMessage(
-      `**If you are experiencing a medical emergency right now, please call 911 or go to your nearest emergency room immediately.**\n\nIf you're safe and were just mentioning something from your visit, no worries -- let me know and we can continue.`,
-      ['I\'m safe -- let\'s continue']
-    );
+    addAssistantMessage(t('chat.emergency'), [t('chat.emergencyChip')]);
     document.getElementById('send-btn').disabled = false;
     return;
   }
 
-  // Only auto-trigger summary if the patient is explicitly asking for one
-  if (/^(create|generate|make|give me).*summary/i.test(text.trim())) {
+  if (wantsSummaryShortcut(text)) {
     if (onOpenSummary) onOpenSummary();
     document.getElementById('send-btn').disabled = false;
     return;
   }
 
   state.isTyping = true;
+  updateReverseButton();
   showTyping();
 
   const history = state.messages.slice(0, -1).map(m => ({ role: m.role, content: m.content }));
@@ -318,17 +405,18 @@ async function processUserInput(text) {
     updateProgressHeuristic();
   } catch (err) {
     removeTyping();
-    addAssistantMessage(err.message || 'Unable to reach the server. Please check your connection and try again.');
+    addAssistantMessage(err.message || t('chat.errorServer'));
   } finally {
     state.isTyping = false;
+    updateReverseButton();
     document.getElementById('send-btn').disabled = false;
   }
 }
 
 function getSectionsForMode() {
-  if (state.chatMode === 'review') return SOAP_SECTIONS;
-  if (state.chatMode === 'combined') return COMBINED_SECTIONS;
-  return PREP_SECTIONS;
+  if (state.chatMode === 'review') return soapSectionLabels();
+  if (state.chatMode === 'combined') return combinedSectionLabels();
+  return prepSectionLabels();
 }
 
 function updateProgressHeuristic() {
@@ -336,14 +424,21 @@ function updateProgressHeuristic() {
   const sections = getSectionsForMode();
   const totalSections = sections.length;
 
-  // Gentle progress: ramps slowly based on total exchanges (user + assistant).
-  // A real conversation typically runs 12-20+ turns total.
-  // Progress starts slow so patients don't feel rushed.
+  if (totalTurns === 0) {
+    setProgress(0);
+    renderSectionPills(sections, 0);
+    return;
+  }
+
+  if (totalTurns === 1) {
+    setProgress(5);
+    renderSectionPills(sections, 0);
+    return;
+  }
+
   const progress = Math.min(5 + Math.round((totalTurns / (totalSections * 5)) * 90), 95);
   setProgress(progress);
 
-  // Section pill activation: advances roughly every 4-5 exchanges, lagging intentionally
-  // so the patient never feels the UI is pushing them to "keep up."
   const exchangeCount = Math.floor(totalTurns / 2);
   const activeIdx = Math.min(Math.floor(exchangeCount / 4), totalSections - 1);
   renderSectionPills(sections, activeIdx);
@@ -354,7 +449,7 @@ export async function saveCurrentSession() {
   if (!state.currentSessionId) {
     state.currentSessionId = crypto.randomUUID();
   }
-  const date = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  const date = new Date().toLocaleDateString(dateLocale(), { month: 'short', day: 'numeric', year: 'numeric' });
   try {
     await apiSaveSession(
       state.currentSessionId,
@@ -378,31 +473,29 @@ export async function loadSession(s) {
   const modeLabel = document.getElementById('chat-mode-label');
   const titleEl = document.getElementById('chat-title');
   if (s.mode === 'review') {
-    modeLabel.textContent = 'Visit Review';
+    modeLabel.textContent = t('chat.mode.visitReview');
     modeLabel.className = 'chat-mode-label review';
-    titleEl.textContent = 'Your Last Visit';
-    renderSectionPills(SOAP_SECTIONS, SOAP_SECTIONS.length - 1);
+    titleEl.textContent = t('chat.title.yourLastVisit');
+    renderSectionPills(soapSectionLabels(), soapSectionLabels().length - 1);
   } else if (s.mode === 'combined') {
-    modeLabel.textContent = 'Visit Review + Prep';
+    modeLabel.textContent = t('chat.mode.visitReviewPrep');
     modeLabel.className = 'chat-mode-label prepare';
-    titleEl.textContent = 'Review & Prepare';
-    renderSectionPills(COMBINED_SECTIONS, COMBINED_SECTIONS.length - 1);
+    titleEl.textContent = t('chat.title.reviewPrepare');
+    renderSectionPills(combinedSectionLabels(), combinedSectionLabels().length - 1);
   } else {
-    modeLabel.textContent = 'Visit Prep';
+    modeLabel.textContent = t('chat.mode.visitPrep');
     modeLabel.className = 'chat-mode-label prepare';
-    titleEl.textContent = 'Prepare for Your Next Visit';
-    renderSectionPills(PREP_SECTIONS, PREP_SECTIONS.length - 1);
+    titleEl.textContent = t('chat.title.prepareNext');
+    renderSectionPills(prepSectionLabels(), prepSectionLabels().length - 1);
   }
 
-  const body = document.getElementById('chat-body');
-  body.innerHTML = '';
-  s.messages.forEach(m => {
-    if (m.role === 'assistant') addAssistantMessage(m.content);
-    else addUserMessage(m.content);
-  });
+  renderMessagesFromState();
   setProgress(100);
   document.getElementById('summarize-bar').style.display = 'flex';
   document.getElementById('section-pills').style.display = 'flex';
+  requestAnimationFrame(() => {
+    document.getElementById('chat-input')?.focus();
+  });
 }
 
 export async function deleteCurrentSession() {

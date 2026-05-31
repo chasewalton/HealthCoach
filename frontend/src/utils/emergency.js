@@ -1,4 +1,5 @@
-const EMERGENCY_PATTERN = /chest pain|can't breathe|can not breathe|suicid|emergency|call 911|heart attack/i;
+const EMERGENCY_PATTERN =
+  /chest pain|can't breathe|can not breathe|suicid|emergency|call 911|heart attack|dolor de pecho|no puedo respirar|emergencia|infarto|suicidio/i;
 
 /**
  * Returns true when text looks like an active emergency.

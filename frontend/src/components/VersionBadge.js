@@ -1,8 +1,11 @@
 import { VERSION } from '../versionInfo.js';
 import { open as openVersionChangelog } from './modals/VersionChangelogModal.js';
+import { t } from '../i18n.js';
+import { escapeHtml } from '../utils/format.js';
 
 export function render() {
-  return `<button type="button" class="version-badge" id="version-badge-btn" aria-label="Open release notes (${VERSION})">${VERSION}</button>`;
+  const aria = t('version.ariaRelease', { version: VERSION });
+  return `<button type="button" class="version-badge" id="version-badge-btn" aria-label="${escapeHtml(aria)}">${escapeHtml(VERSION)}</button>`;
 }
 
 export function init() {
