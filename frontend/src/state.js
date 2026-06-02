@@ -60,6 +60,8 @@ const state = {
   onboardingStep: null,
   /** Set synchronously when the greeting+walkthrough sequence is launched, so it can only run once per conversation. */
   landingWalkthroughLaunched: false,
+  /** Set synchronously the first time the landing chat decides what to bootstrap (onboarding vs walkthrough), so re-entrant enterApp/initLandingChat calls can't start a second flow. */
+  landingBootstrapStarted: false,
   /** Review wrap-up sub-step: 'summary-question' | 'questions-loop' | 'next-steps' | 'next-steps-explore' | null. */
   reviewWrapStep: null,
   /** Deferred journey phase target while the review wrap-up sequence is in progress. */

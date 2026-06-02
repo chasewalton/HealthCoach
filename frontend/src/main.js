@@ -253,6 +253,7 @@ function resetAuthenticatedState() {
   state.journeyPhase = 0;
   state.onboardingStep = null;
   state.landingWalkthroughLaunched = false;
+  state.landingBootstrapStarted = false;
   state.reviewWrapStep = null;
   state.pendingPhaseTarget = null;
   state.landingStudyFeedbackReason = null;

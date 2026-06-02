@@ -1027,25 +1027,37 @@ function needsOnboarding() {
 }
 
 function bootstrapLandingIfEmpty() {
+  // `enterApp` → `initLandingChat` → here runs on every Firebase auth event
+  // (initial load, token refresh, "Go to dashboard"), so this can be re-entered.
+  // Make the decision exactly once: the flag is set synchronously, before the
+  // first onboarding message is pushed (that push is deferred ~600ms), so a
+  // second call within that window can't start a competing flow.
+  if (state.landingBootstrapStarted) return;
   if (state.landingMessages.length) return;
+  if (state.onboardingStep) return;
+  state.landingBootstrapStarted = true;
   if (needsOnboarding()) {
     startLanguageOnboardingMessages();
   } else {
     state.journeyPhase = 1;
-    state.onboardingStep = null;
     launchGreetingAndWalkthrough();
   }
 }
 
 /**
  * Launch the greeting messages then the visit walkthrough, exactly once per
- * conversation. The `landingWalkthroughLaunched` flag is checked and set
- * synchronously (before the first awaited delay), so two near-simultaneous
- * entries — e.g. `enterApp` firing from both the auth listener and "Go to
- * dashboard", or a double Continue — cannot launch duplicate sequences.
+ * conversation. Two guards:
+ *  - `landingWalkthroughLaunched`: set synchronously (before the first awaited
+ *    delay), so near-simultaneous entries can't launch duplicate sequences.
+ *  - `onboardingStep`: never launch while the onboarding flow (language → name
+ *    → privacy → Continue) is still active. `needsOnboarding()` is profile-based
+ *    and flips false as soon as language is saved when a name is already on file,
+ *    but the flow isn't finished until Continue, which clears `onboardingStep`.
+ *    Without this gate a re-entrant bootstrap could fire the walkthrough mid-name.
  */
 function launchGreetingAndWalkthrough() {
   if (state.landingWalkthroughLaunched) return;
+  if (state.onboardingStep) return;
   state.landingWalkthroughLaunched = true;
   bumpLandingEpoch();
   void (async () => {
@@ -1056,6 +1068,7 @@ function launchGreetingAndWalkthrough() {
 
 /** First assistant turn: language chips. Used on restart regardless of saved profile. */
 function startLanguageOnboardingMessages() {
+  state.landingBootstrapStarted = true;
   state.journeyPhase = 0;
   state.onboardingStep = 'language';
   void pushStaggeredAssistantMessage(
@@ -1105,6 +1118,7 @@ export function resetLandingChat(options = {}) {
   state.journeyPhase = 0;
   state.onboardingStep = null;
   state.landingWalkthroughLaunched = false;
+  state.landingBootstrapStarted = false;
   state.reviewWrapStep = null;
   state.pendingPhaseTarget = null;
   state.landingStudyFeedbackReason = null;
