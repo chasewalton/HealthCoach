@@ -10,6 +10,7 @@ import {
   formatMessage,
   escapeHtml,
   stripTrailingVisitRecapEngagementQuestion,
+  sanitizeBriefAckReply,
   composeMessageWithInstruction,
   stripInstructionMarker,
 } from '../../utils/format.js';
@@ -1032,11 +1033,25 @@ function bootstrapLandingIfEmpty() {
   } else {
     state.journeyPhase = 1;
     state.onboardingStep = null;
-    void (async () => {
-      await pushLandingGreetingMessages();
-      await runVisitWalkthrough();
-    })();
+    launchGreetingAndWalkthrough();
   }
+}
+
+/**
+ * Launch the greeting messages then the visit walkthrough, exactly once per
+ * conversation. The `landingWalkthroughLaunched` flag is checked and set
+ * synchronously (before the first awaited delay), so two near-simultaneous
+ * entries — e.g. `enterApp` firing from both the auth listener and "Go to
+ * dashboard", or a double Continue — cannot launch duplicate sequences.
+ */
+function launchGreetingAndWalkthrough() {
+  if (state.landingWalkthroughLaunched) return;
+  state.landingWalkthroughLaunched = true;
+  bumpLandingEpoch();
+  void (async () => {
+    await pushLandingGreetingMessages();
+    await runVisitWalkthrough();
+  })();
 }
 
 /** First assistant turn: language chips. Used on restart regardless of saved profile. */
@@ -1089,6 +1104,7 @@ export function resetLandingChat(options = {}) {
   state.landingConversationStarted = true;
   state.journeyPhase = 0;
   state.onboardingStep = null;
+  state.landingWalkthroughLaunched = false;
   state.reviewWrapStep = null;
   state.pendingPhaseTarget = null;
   state.landingStudyFeedbackReason = null;
@@ -2085,10 +2101,7 @@ function handlePrivacyContinue() {
   renderJourneyStepper();
   renderLandingChatMessages();
 
-  void (async () => {
-    await pushLandingGreetingMessages();
-    await runVisitWalkthrough();
-  })();
+  launchGreetingAndWalkthrough();
 }
 
 const STAGGER_DELAY_MIN_MS = 5000;
@@ -2182,7 +2195,7 @@ async function pushReflectiveBriefAck(userText) {
       return;
     }
     removeLandingTyping();
-    const reply = typeof data?.reply === 'string' ? data.reply.trim() : '';
+    const reply = sanitizeBriefAckReply(data?.reply);
     if (reply) {
       state.landingMessages.push({ role: 'assistant', content: reply });
     }
@@ -2865,7 +2878,7 @@ async function finishSinceVisitChecklist(selectedEntries) {
       state.landingIsTyping = false;
       return;
     }
-    ackReply = typeof data?.reply === 'string' ? data.reply.trim() : '';
+    ackReply = sanitizeBriefAckReply(data?.reply);
   } catch (err) {
     if (isLandingEpochStale(epoch)) {
       removeLandingTyping();
@@ -3139,7 +3152,10 @@ async function afterSinceVisitFollowUpUserMessage(step, userText, input, sendBtn
       checklistContext: buildLandingChecklistContext(),
     });
     removeLandingTyping();
-    state.landingMessages.push({ role: 'assistant', content: data.reply });
+    const ack = sanitizeBriefAckReply(data?.reply);
+    if (ack) {
+      state.landingMessages.push({ role: 'assistant', content: ack });
+    }
     state.landingIsTyping = false;
     renderLandingChatMessages();
 

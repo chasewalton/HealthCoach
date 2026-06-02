@@ -368,6 +368,54 @@ export function stripTrailingVisitRecapEngagementQuestion(text) {
   return s.trimEnd();
 }
 
+/**
+ * Sanitizes a brief-ack LLM reply (the short reflective acknowledgments shown
+ * between scripted dashboard steps). These should be 1–2 plain sentences with
+ * no question and no list. Models sometimes append the next scripted question
+ * or leak future-step content (e.g. share-recipient option lists) into the ack,
+ * which makes the app look like it skipped a turn or asked twice. We:
+ *   1. Drop list-like and ALL-CAPS cue lines (bullets, numbered options,
+ *      "YOU CAN CHOOSE ONE OR MORE", etc.).
+ *   2. Truncate at the first interrogative sentence — an acknowledgment must
+ *      never pose a question; the app drives every transition.
+ * Defense-in-depth alongside the brief-ack system prompt rules.
+ */
+export function sanitizeBriefAckReply(text) {
+  let s = String(text ?? '').replace(/\r\n/g, '\n').trim();
+  if (!s) return s;
+
+  s = s
+    .split('\n')
+    .filter((line) => {
+      const t = line.trim();
+      if (!t) return true;
+      if (/^[-*•]\s+/.test(t)) return false;
+      if (/^\d+[.)]\s+/.test(t)) return false;
+      if (t.length >= 6 && /[A-Z]{2}/.test(t) && !/[a-z]/.test(t)) return false;
+      return true;
+    })
+    .join('\n')
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+  if (!s) return s;
+
+  const qIdx = s.indexOf('?');
+  if (qIdx !== -1) {
+    let boundary = -1;
+    for (let i = qIdx - 1; i >= 0; i--) {
+      const ch = s[i];
+      if (ch === '.' || ch === '!' || ch === '?' || ch === '\n') {
+        boundary = i;
+        break;
+      }
+    }
+    s = s.slice(0, boundary + 1).trim();
+  }
+
+  return s.trim();
+}
+
 export function escapeHtml(str) {
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }

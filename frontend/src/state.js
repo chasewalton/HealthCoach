@@ -58,6 +58,8 @@ const state = {
   journeyPhase: 0,
   /** Onboarding sub-step: 'language' | 'name' | 'privacy' | null (done/skipped). */
   onboardingStep: null,
+  /** Set synchronously when the greeting+walkthrough sequence is launched, so it can only run once per conversation. */
+  landingWalkthroughLaunched: false,
   /** Review wrap-up sub-step: 'summary-question' | 'questions-loop' | 'next-steps' | 'next-steps-explore' | null. */
   reviewWrapStep: null,
   /** Deferred journey phase target while the review wrap-up sequence is in progress. */
