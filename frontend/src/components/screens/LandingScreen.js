@@ -693,17 +693,6 @@ function wireLandingMenu(signal) {
   }, { signal });
 }
 
-/** True when focus is on a control that should keep Enter (e.g. another button or a text field). */
-function landingEnterShouldDeferToFocusedControl(el) {
-  if (!el) return false;
-  if (el.id === 'landing-chat-input') return true;
-  const tag = el.tagName;
-  if (tag === 'BUTTON' || tag === 'A' || tag === 'TEXTAREA' || tag === 'SELECT') return true;
-  if (tag === 'INPUT') return true;
-  if (el.isContentEditable) return true;
-  return false;
-}
-
 function clearLandingComposerInput() {
   const input = document.getElementById('landing-chat-input');
   const sendBtn = document.getElementById('landing-send-btn');
@@ -714,23 +703,10 @@ function clearLandingComposerInput() {
   if (sendBtn) sendBtn.disabled = true;
 }
 
-function onDocumentKeydownForLandingShortcuts(e) {
-  if (e.key !== 'Enter' || e.shiftKey) return;
-  const landing = document.getElementById('screen-landing');
-  if (!landing?.classList.contains('active')) return;
-  if (document.querySelector('.modal-overlay.open')) return;
-  if (state.landingIsTyping) return;
-  if (landingEnterShouldDeferToFocusedControl(document.activeElement)) return;
-
-  const lastMsg = state.landingMessages[state.landingMessages.length - 1];
-
-  if (state.onboardingStep === 'privacy' && lastMsg?.role === 'assistant' && lastMsg.action) {
-    e.preventDefault();
-    clearLandingComposerInput();
-    handlePrivacyContinue();
-    return;
-  }
-}
+// The privacy gate is advanced ONLY by deliberately activating the Continue
+// button (click, or Tab-focus + Enter/Space). We intentionally do NOT auto-advance
+// on a stray "Enter anywhere": a held or repeated Enter from submitting the name
+// field would otherwise carry over and skip the privacy screen without a click.
 
 const VOICE_ICON_MIC = `
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>`;
@@ -869,8 +845,6 @@ function wireLandingChatInput(signal) {
   const sendBtn = document.getElementById('landing-send-btn');
   const voiceBtn = document.getElementById('landing-voice-btn');
   if (!input || !sendBtn) return;
-
-  document.addEventListener('keydown', onDocumentKeydownForLandingShortcuts, { signal });
 
   wireLandingVoiceButton(voiceBtn, input, sendBtn, signal);
   sendBtn.addEventListener('click', sendLandingMessage, { signal });
