@@ -38,6 +38,7 @@ import * as ProfileModal from './components/modals/ProfileModal.js';
 import * as VersionChangelogModal from './components/modals/VersionChangelogModal.js';
 import * as StudyFeedbackModal from './components/modals/StudyFeedbackModal.js';
 import * as EndChatModal from './components/modals/EndChatModal.js';
+import * as PairModal from './components/modals/PairModal.js';
 import * as NotePrompt from './components/chat/NotePrompt.js';
 import * as Toast from './components/Toast.js';
 import * as VersionBadge from './components/VersionBadge.js';
@@ -87,6 +88,7 @@ function renderApp() {
     VersionChangelogModal.render(),
     StudyFeedbackModal.render(),
     EndChatModal.render(),
+    PairModal.render(),
     Toast.render(),
     VersionBadge.render(),
   ].join('');
@@ -106,6 +108,7 @@ function initComponents() {
   VersionChangelogModal.init();
   StudyFeedbackModal.init();
   EndChatModal.init();
+  PairModal.init();
   VersionBadge.init();
 }
 
@@ -152,12 +155,17 @@ function wireCallbacks() {
       showScreen('home');
     },
     onOpenStudyModal: () => StudyFeedbackModal.open(),
-    onOpenEndConversation: () => EndChatModal.open(),
+    onOpenEndConversation: () => PairModal.open(),
     onOpenSummaryDoc: (summaryText) => SummaryDocModal.open(summaryText),
   });
 
   StudyFeedbackModal.setCallbacks({
     onClose: () => LandingScreen.handleStudyFeedbackClosed(),
+  });
+
+  PairModal.setCallbacks({
+    // After the required PAIR questionnaire, continue to the editable summary + Share step.
+    onComplete: () => EndChatModal.open(),
   });
 
   EndChatModal.setCallbacks({

@@ -89,6 +89,37 @@ router.post('/api/feedback', verifyAuth, async (req: AuthenticatedRequest, res) 
       return;
     }
 
+    if (type === 'pair') {
+      const rawItems =
+        body.items && typeof body.items === 'object' ? (body.items as Record<string, unknown>) : {};
+      const rawComments =
+        body.comments && typeof body.comments === 'object'
+          ? (body.comments as Record<string, unknown>)
+          : {};
+
+      const items: Record<string, number | null> = {};
+      for (let i = 1; i <= 17; i++) {
+        items[`item${i}`] = clampLikert(rawItems[`item${i}`]);
+      }
+
+      const comments: Record<string, string> = {};
+      for (const cid of ['item4a', 'item6a', 'item7a', 'item8a']) {
+        comments[cid] = clampStr(rawComments[cid], 2000);
+      }
+
+      await adminDb.collection('feedback').add({
+        userId: uid,
+        sessionId,
+        type: 'pair',
+        items,
+        comments,
+        createdAt: nowIso(),
+      });
+
+      res.json({ ok: true });
+      return;
+    }
+
     const { noticedErrors, details } = body;
 
     const summaryEasyToUnderstand = clampLikert(body.summaryEasyToUnderstand);

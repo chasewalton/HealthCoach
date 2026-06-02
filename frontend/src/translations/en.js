@@ -215,6 +215,61 @@ export default {
   'study.emptySummary':
     'No visit summary is available in this chat yet. You can still complete the feedback on the left, or close this window.',
 
+  // Patient AI Rating Tool (PAIR) — End Conversation questionnaire
+  'pair.title': 'Patient AI Rating Tool (PAIR)',
+  'pair.closeAria': 'Close questionnaire',
+  'pair.lead': "OK, thanks! Let's move on to your feedback.",
+  'pair.intro':
+    'The HealthCoach chat is the conversation you had with HealthCoach to answer your health questions and prepare for your next visit.',
+  'pair.instructions':
+    'Please focus on the information that HealthCoach provided you during your chat to answer the following questions.',
+  'pair.requiredHint': 'Please answer all rating questions to continue.',
+  'pair.scale1': 'Not at all',
+  'pair.scale2': 'A little',
+  'pair.scale3': 'Somewhat',
+  'pair.scale4': 'Mostly',
+  'pair.scale5': 'Extremely',
+  'pair.scalePointAria': 'Response {n} of 5: {label}',
+  'pair.item1':
+    'My HealthCoach chat was easy to understand. The medical information was explained clearly.',
+  'pair.item2':
+    'My HealthCoach chat was useful. It helped me know what to do next or how to take action for my health.',
+  'pair.item3': 'My HealthCoach chat was in my language and reading level.',
+  'pair.item4':
+    'My HealthCoach chat used words or terms that are respectful: It was free from bias or stereotypes.',
+  'pair.item4a':
+    'If you felt the words or terms were disrespectful, biased, stigmatizing or stereotyped, please tell us about it here:',
+  'pair.item5':
+    'My HealthCoach chat used words or terms that had a caring tone / empathy: The information was given to me in a way that felt kind and supportive.',
+  'pair.item6':
+    'My HealthCoach chat was complete. It was not missing something important about my health.',
+  'pair.item6a': 'If something important was missing, please tell us about it here:',
+  'pair.item7': 'My HealthCoach chat was accurate. The information was true and free from mistakes.',
+  'pair.note7':
+    'Note: A medical mistake means wrong facts, like saying “right ankle” when it should be “left ankle” or listing the wrong medication or dose. It does not include wrong spelling.',
+  'pair.item7a': 'If you saw a possible mistake(s), please tell us about it here:',
+  'pair.item8': 'My HealthCoach chat was harmful to me.',
+  'pair.note8': 'Note: Harmful includes physical or emotional harm.',
+  'pair.item8a': 'If you felt harmed, please tell us about it here:',
+  'pair.item9':
+    'My HealthCoach chat was personalized. I know this information was about me or relevant to me.',
+  'pair.item10':
+    'My HealthCoach chat focused on the health issues that matter most to me. It gave me the information I needed.',
+  'pair.item11': 'My HealthCoach chat helped me better understand my health.',
+  'pair.item12': 'My HealthCoach chat helped me feel prepared for my future healthcare visits.',
+  'pair.item13': 'My HealthCoach chat helped me feel informed to make decisions about my care.',
+  'pair.sectionTool':
+    'The following questions relate to your experience using the specific AI Tool (for example ChatGPT, Gemini, Claude, etc.) that provided you with this information.',
+  'pair.item14': 'HealthCoach was easy to use.',
+  'pair.item15': 'I trust HealthCoach for questions about my health.',
+  'pair.item16': 'I understand who has access to the private information I share with HealthCoach.',
+  'pair.item17':
+    'I would recommend HealthCoach to friends and family for questions about their health.',
+  'pair.commentPlaceholder': 'Type your response here (optional).',
+  'pair.submit': 'Submit & continue',
+  'pair.toastSubmitted': 'Thanks — your feedback was sent.',
+  'pair.toastSubmitError': 'Could not send feedback. Check your connection and try again.',
+
   'version.title': 'Release notes',
   'version.subtitle': 'You are on',
   'version.admin': 'Admin Access',
