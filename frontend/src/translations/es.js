@@ -559,7 +559,7 @@ Empecemos con su última visita.`,
   'landing.assistant.thanksTopics': 'Gracias — lo tendré en cuenta mientras repasamos su visita.',
   'landing.assistant.noTopics': 'Sin problema — podemos cubrir la visita juntos y usted puede guiar cuando quiera.',
   'landing.assistant.thanksCheckin': 'Gracias por decírmelo — tendré ese contexto en cuenta.',
-  'landing.assistant.gotCheckin': 'Entendido — gracias por el repaso rápido. Seguimos desde aquí.',
+  'landing.assistant.gotCheckin': 'Entendido — gracias por el repaso rápido. Sigamos.',
 
   'landing.userLine.sinceVisitChecked': 'Seguimiento desde mi última visita — experimenté: {list}.',
   'landing.userLine.sinceVisitNone': 'Seguimiento desde mi última visita — ninguna de estas me aplica.',

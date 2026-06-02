@@ -558,7 +558,7 @@ Let's start with your last visit.`,
   'landing.assistant.thanksTopics': "Thanks — I'll keep those in mind as we go through your visit.",
   'landing.assistant.noTopics': 'No problem — we can cover the visit together and you can steer anytime.',
   'landing.assistant.thanksCheckin': "Thanks for letting me know — I'll keep that context in mind.",
-  'landing.assistant.gotCheckin': "Got it — thanks for the quick check-in. We'll take it from here.",
+  'landing.assistant.gotCheckin': "Got it — thanks for the quick check-in. Let's keep going.",
 
   'landing.userLine.sinceVisitChecked': 'Check-in since my last visit — I experienced: {list}.',
   'landing.userLine.sinceVisitNone': 'Check-in since my last visit — none of these apply to me.',
